@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { CardIngestionResult, CardIngestionCategory } from "@/lib/ai/cardIngestion";
 import { REWARD_CATEGORIES } from "@/lib/types";
+
+function Field({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className={`block text-xs text-slate-400 ${className ?? ""}`}>
+      <span className="mb-1 block">{label}</span>
+      {children}
+    </label>
+  );
+}
 
 function emptyCategory(): CardIngestionCategory {
   return {
@@ -147,55 +164,65 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
             Card details — edit anything Claude got wrong
           </p>
           <div className="mb-4 grid grid-cols-2 gap-2">
-            <input
-              value={draft.name}
-              onChange={(e) => updateDraftField("name", e.target.value)}
-              placeholder="Card name"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
-            <input
-              value={draft.issuer}
-              onChange={(e) => updateDraftField("issuer", e.target.value)}
-              placeholder="Issuer"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
-            <input
-              value={draft.network}
-              onChange={(e) => updateDraftField("network", e.target.value)}
-              placeholder="Network (Visa, Amex...)"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
-            <select
-              value={draft.reward_type}
-              onChange={(e) =>
-                updateDraftField("reward_type", e.target.value as CardIngestionResult["reward_type"])
-              }
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            >
-              <option value="cash_back">Cash back</option>
-              <option value="points">Points</option>
-              <option value="miles">Miles</option>
-            </select>
-            <input
-              value={draft.reward_program}
-              onChange={(e) => updateDraftField("reward_program", e.target.value)}
-              placeholder="Reward program"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
-            <input
-              type="number"
-              step="0.1"
-              value={draft.base_earn_rate}
-              onChange={(e) => updateDraftField("base_earn_rate", parseFloat(e.target.value) || 0)}
-              placeholder="Base earn rate"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
-            <input
-              value={draft.terms_url ?? ""}
-              onChange={(e) => updateDraftField("terms_url", e.target.value || null)}
-              placeholder="Terms URL"
-              className="col-span-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
-            />
+            <Field label="Card name">
+              <input
+                value={draft.name}
+                onChange={(e) => updateDraftField("name", e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
+            <Field label="Issuer">
+              <input
+                value={draft.issuer}
+                onChange={(e) => updateDraftField("issuer", e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
+            <Field label="Network">
+              <input
+                value={draft.network}
+                onChange={(e) => updateDraftField("network", e.target.value)}
+                placeholder="Visa, Mastercard, Amex..."
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
+            <Field label="Reward type">
+              <select
+                value={draft.reward_type}
+                onChange={(e) =>
+                  updateDraftField("reward_type", e.target.value as CardIngestionResult["reward_type"])
+                }
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              >
+                <option value="cash_back">Cash back</option>
+                <option value="points">Points</option>
+                <option value="miles">Miles</option>
+              </select>
+            </Field>
+            <Field label="Reward program">
+              <input
+                value={draft.reward_program}
+                onChange={(e) => updateDraftField("reward_program", e.target.value)}
+                placeholder='e.g. "Capital One Miles"'
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
+            <Field label="Base earn rate (× per $1, on non-bonus purchases)">
+              <input
+                type="number"
+                step="0.1"
+                value={draft.base_earn_rate}
+                onChange={(e) => updateDraftField("base_earn_rate", parseFloat(e.target.value) || 0)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
+            <Field label="Terms URL" className="col-span-2">
+              <input
+                value={draft.terms_url ?? ""}
+                onChange={(e) => updateDraftField("terms_url", e.target.value || null)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+              />
+            </Field>
           </div>
 
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
