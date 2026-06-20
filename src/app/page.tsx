@@ -32,6 +32,7 @@ export default function Home() {
   const [logged, setLogged] = useState(false);
   const [logging, setLogging] = useState(false);
   const [cards, setCards] = useState<CardWithCategories[] | null>(null);
+  const [showCalc, setShowCalc] = useState(false);
 
   useEffect(() => {
     fetch("/api/cards")
@@ -54,6 +55,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Lookup failed");
       setResult(data);
       setShowRunnerUps(false);
+      setShowCalc(false);
       setLogged(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -210,6 +212,52 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          <button
+            onClick={() => setShowCalc((v) => !v)}
+            className="mt-2 text-xs text-slate-400 hover:text-slate-200"
+          >
+            {showCalc ? "Hide" : "Show"} calculation
+          </button>
+          {showCalc && (
+            <div className="mt-2 rounded-lg bg-slate-950 p-3 text-xs text-slate-400">
+              {top.card.reward_type === "cash_back" ? (
+                <p>
+                  ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}% cash back ={" "}
+                  <span className="text-slate-200">{formatCents(top.dollar_value_cents)}</span>
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <p>
+                    ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}×{" "}
+                    {rewardUnit(top.card.reward_type)} ={" "}
+                    <span className="text-slate-200">
+                      {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
+                    </span>
+                  </p>
+                  <p>
+                    {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)} ×{" "}
+                    {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} (
+                    {top.cpp_source === "override"
+                      ? "your custom valuation"
+                      : top.cpp_source === "community"
+                        ? "community valuation"
+                        : "default — no valuation researched yet"}
+                    ) ={" "}
+                    <span className="text-slate-200">{formatCents(top.dollar_value_cents)}</span>{" "}
+                    estimated value
+                  </p>
+                  {top.cpp_source === "default" && (
+                    <p className="text-amber-400">
+                      No community valuation found for {top.card.reward_program} yet — using a
+                      conservative 1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
+                      Set a custom valuation in Settings for a more accurate estimate.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             onClick={logPurchase}

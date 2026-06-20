@@ -41,17 +41,19 @@ export function rankCardsForPurchase(
 
     let dollarValueCents: number;
     let pointsEarned: number;
+    let cppUsed: number | null = null;
+    let cppSource: RankedCardResult["cpp_source"] = null;
 
     if (card.reward_type === "cash_back") {
       pointsEarned = 0;
       dollarValueCents = Math.round(amountDollars * earnRate);
     } else {
       pointsEarned = amountDollars * earnRate;
-      const cpp =
-        cppOverridesByProgram[card.reward_program] ??
-        valuationsByProgram[card.reward_program]?.cpp_community ??
-        1;
-      dollarValueCents = Math.round(pointsEarned * (cpp / 100) * 100);
+      const override = cppOverridesByProgram[card.reward_program];
+      const community = valuationsByProgram[card.reward_program]?.cpp_community;
+      cppUsed = override ?? community ?? 1;
+      cppSource = override !== undefined ? "override" : community !== undefined ? "community" : "default";
+      dollarValueCents = Math.round(pointsEarned * (cppUsed / 100) * 100);
     }
 
     return {
@@ -60,6 +62,8 @@ export function rankCardsForPurchase(
       earn_rate: earnRate,
       points_earned: pointsEarned,
       dollar_value_cents: dollarValueCents,
+      cpp_used: cppUsed,
+      cpp_source: cppSource,
       cap_status: capStatus,
       cap_percent_used: capPercentUsed,
       excluded,
