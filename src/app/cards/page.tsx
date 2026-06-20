@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AddCardFlow from "@/components/AddCardFlow";
+import { formatEarnRate } from "@/lib/format";
 import { REWARD_CATEGORIES } from "@/lib/types";
 import type { CardCategory, CardWithCategories } from "@/lib/types";
 
@@ -12,9 +13,11 @@ function capPercent(cap: { cap_amount_cents: number | null; cap_spent_cents: num
 
 function CategoryRow({
   cat,
+  rewardType,
   onSaved,
 }: {
   cat: CardCategory;
+  rewardType: CardWithCategories["reward_type"];
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -69,7 +72,7 @@ function CategoryRow({
         <div className="flex items-center justify-between">
           <span>{cat.category}</span>
           <div className="flex items-center gap-2">
-            <span>{cat.earn_rate}×</span>
+            <span>{formatEarnRate(rewardType, cat.earn_rate)}</span>
             <button
               onClick={() => setEditing(true)}
               className="text-xs text-indigo-400 hover:underline"
@@ -300,7 +303,8 @@ export default function CardsPage() {
               <div>
                 <h2 className="text-lg font-semibold">{card.name}</h2>
                 <p className="text-sm text-slate-400">
-                  {card.issuer} · {card.reward_program} · base {card.base_earn_rate}×
+                  {card.issuer} · {card.reward_program} · base{" "}
+                  {formatEarnRate(card.reward_type, card.base_earn_rate)}
                 </p>
               </div>
               {card.terms_url && (
@@ -317,7 +321,7 @@ export default function CardsPage() {
 
             <ul className="mt-3 space-y-2">
               {card.card_categories.map((c) => (
-                <CategoryRow key={c.id} cat={c} onSaved={load} />
+                <CategoryRow key={c.id} cat={c} rewardType={card.reward_type} onSaved={load} />
               ))}
             </ul>
             <AddCategoryRow cardId={card.id} onSaved={load} />

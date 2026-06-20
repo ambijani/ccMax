@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AddCardFlow from "@/components/AddCardFlow";
+import { formatEarnRate, rewardUnit } from "@/lib/format";
 import type { CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
 
 interface RecommendResponse {
@@ -18,12 +19,6 @@ interface RecommendResponse {
 
 function formatCents(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
-}
-
-function rewardUnit(rewardType: "cash_back" | "points" | "miles") {
-  if (rewardType === "cash_back") return "cash back";
-  if (rewardType === "miles") return "miles";
-  return "points";
 }
 
 export default function Home() {
@@ -192,7 +187,7 @@ export default function Home() {
             <div>
               <p className="text-xs uppercase tracking-wide text-indigo-400">
                 {overrideCategory ?? result?.classification.category} ·{" "}
-                {top.earn_rate}× {rewardUnit(top.card.reward_type)}
+                {formatEarnRate(top.card.reward_type, top.earn_rate)}
               </p>
               <h2 className="text-xl font-semibold">{top.card.name}</h2>
               <p className="text-sm text-slate-400">{top.card.issuer}</p>
@@ -300,7 +295,7 @@ export default function Home() {
                       className="flex items-center justify-between rounded-lg bg-slate-950 px-3 py-2 text-sm"
                     >
                       <span className={r.excluded ? "text-slate-500" : "text-slate-200"}>
-                        {r.card.name} — {r.earn_rate}×
+                        {r.card.name} — {formatEarnRate(r.card.reward_type, r.earn_rate)}
                         {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
                       </span>
                       <span className="text-slate-400">{formatCents(r.dollar_value_cents)}</span>

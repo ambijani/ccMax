@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { CardIngestionResult, CardIngestionCategory } from "@/lib/ai/cardIngestion";
+import { rewardUnit } from "@/lib/format";
 import { REWARD_CATEGORIES } from "@/lib/types";
 
 function Field({
@@ -207,7 +208,13 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                 className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
               />
             </Field>
-            <Field label="Base earn rate (× per $1, on non-bonus purchases)">
+            <Field
+              label={
+                draft.reward_type === "cash_back"
+                  ? "Base earn rate (% cash back, non-bonus purchases)"
+                  : `Base earn rate (× ${rewardUnit(draft.reward_type)} per $1, non-bonus purchases)`
+              }
+            >
               <input
                 type="number"
                 step="0.1"
@@ -252,7 +259,9 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                     }
                     className="w-20 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
                   />
-                  <span className="text-xs text-slate-500">×</span>
+                  <span className="text-xs text-slate-500">
+                    {draft.reward_type === "cash_back" ? "%" : `× ${rewardUnit(draft.reward_type)}`}
+                  </span>
                   <button
                     onClick={() => removeCategory(i)}
                     className="ml-auto rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
