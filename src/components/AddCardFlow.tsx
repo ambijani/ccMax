@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { CardIngestionResult } from "@/lib/ai/cardIngestion";
+import type { CardIngestionResult, CardIngestionCategory } from "@/lib/ai/cardIngestion";
+import { REWARD_CATEGORIES } from "@/lib/types";
+
+function emptyCategory(): CardIngestionCategory {
+  return {
+    category: REWARD_CATEGORIES[0],
+    earn_rate: 1,
+    cap_amount_cents: null,
+    cap_period: null,
+    source_text: "",
+    source_url: null,
+  };
+}
 
 export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
   const [open, setOpen] = useState(false);
@@ -28,6 +40,32 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function updateDraftField<K extends keyof CardIngestionResult>(
+    key: K,
+    value: CardIngestionResult[K],
+  ) {
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+  }
+
+  function updateCategory(index: number, patch: Partial<CardIngestionCategory>) {
+    setDraft((d) => {
+      if (!d) return d;
+      const categories = d.categories.map((c, i) => (i === index ? { ...c, ...patch } : c));
+      return { ...d, categories };
+    });
+  }
+
+  function removeCategory(index: number) {
+    setDraft((d) => {
+      if (!d) return d;
+      return { ...d, categories: d.categories.filter((_, i) => i !== index) };
+    });
+  }
+
+  function addCategory() {
+    setDraft((d) => (d ? { ...d, categories: [...d.categories, emptyCategory()] } : d));
   }
 
   async function confirmSave() {
@@ -69,7 +107,8 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
       {!draft && (
         <>
           <p className="mb-3 text-sm text-slate-400">
-            Enter the card name and Claude will research its official benefits.
+            Enter the card name and Claude will research its official benefits. You&apos;ll be
+            able to review and edit everything before saving.
           </p>
           <div className="flex gap-2">
             <input
@@ -86,6 +125,13 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
               {loading ? "Researching..." : "Research"}
             </button>
             <button
+              onClick={() => setDraft(emptyCardDraft(cardName))}
+              disabled={!cardName}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+            >
+              Enter manually
+            </button>
+            <button
               onClick={() => setOpen(false)}
               className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
             >
@@ -97,39 +143,147 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
 
       {draft && (
         <div>
-          <h3 className="text-lg font-semibold">{draft.name}</h3>
-          <p className="mb-3 text-sm text-slate-400">
-            {draft.issuer} · {draft.network} · {draft.reward_program} · base {draft.base_earn_rate}×
-          </p>
-          {draft.terms_url && (
-            <a
-              href={draft.terms_url}
-              target="_blank"
-              rel="noreferrer"
-              className="mb-3 inline-block text-xs text-indigo-400 hover:underline"
-            >
-              Official terms page →
-            </a>
-          )}
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-            Review categories before saving
+            Card details — edit anything Claude got wrong
           </p>
-          <ul className="space-y-2">
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            <input
+              value={draft.name}
+              onChange={(e) => updateDraftField("name", e.target.value)}
+              placeholder="Card name"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+            <input
+              value={draft.issuer}
+              onChange={(e) => updateDraftField("issuer", e.target.value)}
+              placeholder="Issuer"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+            <input
+              value={draft.network}
+              onChange={(e) => updateDraftField("network", e.target.value)}
+              placeholder="Network (Visa, Amex...)"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+            <select
+              value={draft.reward_type}
+              onChange={(e) =>
+                updateDraftField("reward_type", e.target.value as CardIngestionResult["reward_type"])
+              }
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            >
+              <option value="cash_back">Cash back</option>
+              <option value="points">Points</option>
+              <option value="miles">Miles</option>
+            </select>
+            <input
+              value={draft.reward_program}
+              onChange={(e) => updateDraftField("reward_program", e.target.value)}
+              placeholder="Reward program"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+            <input
+              type="number"
+              step="0.1"
+              value={draft.base_earn_rate}
+              onChange={(e) => updateDraftField("base_earn_rate", parseFloat(e.target.value) || 0)}
+              placeholder="Base earn rate"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+            <input
+              value={draft.terms_url ?? ""}
+              onChange={(e) => updateDraftField("terms_url", e.target.value || null)}
+              placeholder="Terms URL"
+              className="col-span-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+            />
+          </div>
+
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+            Bonus categories — edit, paste your own benefits text, or remove
+          </p>
+          <ul className="space-y-3">
             {draft.categories.map((c, i) => (
               <li key={i} className="rounded-lg bg-slate-950 p-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{c.category}</span>
-                  <span>{c.earn_rate}×</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={c.category}
+                    onChange={(e) => updateCategory(i, { category: e.target.value })}
+                    className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+                  >
+                    {REWARD_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={c.earn_rate}
+                    onChange={(e) =>
+                      updateCategory(i, { earn_rate: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-20 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+                  />
+                  <span className="text-xs text-slate-500">×</span>
+                  <button
+                    onClick={() => removeCategory(i)}
+                    className="ml-auto rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                  >
+                    Remove
+                  </button>
                 </div>
-                {c.cap_amount_cents && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Cap: ${(c.cap_amount_cents / 100).toFixed(0)} / {c.cap_period}
-                  </p>
-                )}
-                <p className="mt-1 text-xs italic text-slate-400">&ldquo;{c.source_text}&rdquo;</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="Cap $ (optional)"
+                    value={c.cap_amount_cents !== null ? c.cap_amount_cents / 100 : ""}
+                    onChange={(e) =>
+                      updateCategory(i, {
+                        cap_amount_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null,
+                      })
+                    }
+                    className="w-32 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                  />
+                  <select
+                    value={c.cap_period ?? ""}
+                    onChange={(e) =>
+                      updateCategory(i, {
+                        cap_period: e.target.value
+                          ? (e.target.value as CardIngestionCategory["cap_period"])
+                          : null,
+                      })
+                    }
+                    className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                  >
+                    <option value="">No cap period</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
+                <textarea
+                  value={c.source_text ?? ""}
+                  onChange={(e) => updateCategory(i, { source_text: e.target.value })}
+                  placeholder="Paste the benefit text from the issuer's terms page, or edit Claude's research..."
+                  rows={2}
+                  className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs italic text-slate-300 placeholder:text-slate-500"
+                />
+                <input
+                  value={c.source_url ?? ""}
+                  onChange={(e) => updateCategory(i, { source_url: e.target.value || null })}
+                  placeholder="Source URL"
+                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                />
               </li>
             ))}
           </ul>
+          <button
+            onClick={addCategory}
+            className="mt-2 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+          >
+            + Add category
+          </button>
+
           <div className="mt-4 flex gap-2">
             <button
               onClick={confirmSave}
@@ -153,4 +307,17 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
       )}
     </div>
   );
+}
+
+function emptyCardDraft(name: string): CardIngestionResult {
+  return {
+    name,
+    issuer: "",
+    network: "",
+    reward_type: "cash_back",
+    reward_program: "",
+    base_earn_rate: 1,
+    terms_url: null,
+    categories: [],
+  };
 }

@@ -6,8 +6,8 @@ export interface CardIngestionCategory {
   earn_rate: number;
   cap_amount_cents: number | null;
   cap_period: "quarterly" | "annual" | null;
-  source_text: string;
-  source_url: string;
+  source_text: string | null;
+  source_url: string | null;
 }
 
 export interface CardIngestionResult {
@@ -17,7 +17,7 @@ export interface CardIngestionResult {
   reward_type: "cash_back" | "points" | "miles";
   reward_program: string;
   base_earn_rate: number;
-  terms_url: string;
+  terms_url: string | null;
   categories: CardIngestionCategory[];
 }
 

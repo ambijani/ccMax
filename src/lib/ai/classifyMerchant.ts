@@ -10,7 +10,7 @@ export interface MerchantClassification {
 }
 
 export async function classifyMerchant(merchantName: string): Promise<MerchantClassification> {
-  const prompt = `Classify the merchant "${merchantName}" into exactly one credit card reward category from this list: ${REWARD_CATEGORIES.join(", ")}.
+  const prompt = `Classify the purchase "${merchantName}" (this may be a merchant name like "Costco" or a description of what's being bought, like "plane ticket" or "groceries") into exactly one credit card reward category from this list: ${REWARD_CATEGORIES.join(", ")}.
 
 Apply these rules:
 - Costco and other membership warehouse clubs -> "Wholesale", not "Grocery" (most cards treat warehouse clubs differently from supermarkets).

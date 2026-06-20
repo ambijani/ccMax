@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import type { PointsValuation, RankedCardResult } from "@/lib/types";
+import { useEffect, useState } from "react";
+import AddCardFlow from "@/components/AddCardFlow";
+import type { CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
 
 interface RecommendResponse {
   classification: {
@@ -29,6 +30,14 @@ export default function Home() {
   const [overrideCategory, setOverrideCategory] = useState<string | null>(null);
   const [logged, setLogged] = useState(false);
   const [logging, setLogging] = useState(false);
+  const [cards, setCards] = useState<CardWithCategories[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cards")
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setCards)
+      .catch(() => setCards([]));
+  }, []);
 
   async function lookup(category?: string) {
     setLoading(true);
@@ -80,11 +89,32 @@ export default function Home() {
   const runnerUps = result?.ranked.slice(1) ?? [];
   const topValuation = top ? result?.valuations[top.card.reward_program] : undefined;
 
+  if (cards === null) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-10">
+        <p className="text-sm text-slate-400">Loading...</p>
+      </main>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-10">
+        <h1 className="mb-1 text-2xl font-semibold">Welcome!</h1>
+        <p className="mb-6 text-sm text-slate-400">
+          Add your first credit card to start getting recommendations.
+        </p>
+        <AddCardFlow onSaved={() => fetch("/api/cards").then((r) => r.json()).then(setCards)} />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold">Which card should I use?</h1>
+      <h1 className="mb-1 text-2xl font-semibold">What should I use?</h1>
       <p className="mb-6 text-sm text-slate-400">
-        Enter a merchant and amount to get a sourced recommendation.
+        Enter what you&apos;re buying (item or merchant) and the amount to get a sourced
+        recommendation.
       </p>
 
       <form
@@ -98,7 +128,7 @@ export default function Home() {
         <input
           value={merchant}
           onChange={(e) => setMerchant(e.target.value)}
-          placeholder="Merchant (e.g. Costco)"
+          placeholder="Item or merchant (e.g. Costco, plane ticket, groceries)"
           required
           className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
         />
