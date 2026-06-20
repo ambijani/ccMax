@@ -193,13 +193,20 @@ export default function Home() {
               <p className="text-sm text-slate-400">{top.card.issuer}</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-emerald-400">
-                {formatCents(top.dollar_value_cents)}
-              </p>
-              {top.card.reward_type !== "cash_back" && (
-                <p className="text-xs text-slate-500">
-                  {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
+              {top.card.reward_type === "cash_back" ? (
+                <p className="text-2xl font-bold text-emerald-400">
+                  {formatCents(top.dollar_value_cents)}
                 </p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-emerald-400">
+                    {Math.round(top.points_earned).toLocaleString()}{" "}
+                    {rewardUnit(top.card.reward_type)}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    ≈ {formatCents(top.dollar_value_cents)}
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -298,7 +305,11 @@ export default function Home() {
                         {r.card.name} — {formatEarnRate(r.card.reward_type, r.earn_rate)}
                         {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
                       </span>
-                      <span className="text-slate-400">{formatCents(r.dollar_value_cents)}</span>
+                      <span className="text-slate-400">
+                        {r.card.reward_type === "cash_back"
+                          ? formatCents(r.dollar_value_cents)
+                          : `${Math.round(r.points_earned).toLocaleString()} ${rewardUnit(r.card.reward_type)} (≈ ${formatCents(r.dollar_value_cents)})`}
+                      </span>
                     </li>
                   ))}
                 </ul>
