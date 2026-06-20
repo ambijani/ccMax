@@ -4,7 +4,128 @@ import { useCallback, useEffect, useState } from "react";
 import AddCardFlow from "@/components/AddCardFlow";
 import { formatEarnRate } from "@/lib/format";
 import { REWARD_CATEGORIES } from "@/lib/types";
-import type { CardCategory, CardWithCategories } from "@/lib/types";
+import type { CardCategory, CardPromo, CardWithCategories } from "@/lib/types";
+
+function formatPromoValue(promo: CardPromo) {
+  if (promo.value_cents) return `$${(promo.value_cents / 100).toFixed(0)} off`;
+  if (promo.value_percent) return `${promo.value_percent}% off`;
+  return null;
+}
+
+function PromoSection({ cardId }: { cardId: string }) {
+  const [promos, setPromos] = useState<CardPromo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [researching, setResearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/cards/promos?cardId=${cardId}`);
+    if (res.ok) setPromos(await res.json());
+    setLoading(false);
+  }, [cardId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function research() {
+    setResearching(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/cards/promos/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Research failed");
+      setPromos(data.promos);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setResearching(false);
+    }
+  }
+
+  async function remove(id: string) {
+    await fetch("/api/cards/promos", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    load();
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          Active promos &amp; offers
+        </p>
+        <button
+          onClick={research}
+          disabled={researching}
+          className="text-xs text-indigo-400 hover:underline disabled:opacity-50"
+        >
+          {researching ? "Searching Reddit/DoC..." : "Check for active promos"}
+        </button>
+      </div>
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {!loading && promos.length === 0 && !researching && (
+        <p className="mt-1 text-xs text-slate-500">
+          None found yet — click &quot;Check for active promos&quot; to search.
+        </p>
+      )}
+      {promos.length > 0 && (
+        <ul className="mt-2 space-y-2">
+          {promos.map((p) => (
+            <li key={p.id} className="rounded-lg bg-slate-950 p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">
+                    {p.title}
+                    {formatPromoValue(p) && (
+                      <span className="ml-2 text-emerald-400">{formatPromoValue(p)}</span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">{p.description}</p>
+                  {p.merchant_keywords && p.merchant_keywords.length > 0 && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Eligible at: {p.merchant_keywords.join(", ")}
+                    </p>
+                  )}
+                  {p.terms && <p className="mt-1 text-xs text-slate-500">Terms: {p.terms}</p>}
+                  {p.expires_at && (
+                    <p className="mt-1 text-xs text-amber-400">
+                      Expires {new Date(p.expires_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  {p.source_url && (
+                    <a
+                      href={p.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block text-xs text-indigo-400 hover:underline"
+                    >
+                      Source →
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => remove(p.id)}
+                  className="shrink-0 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function capPercent(cap: { cap_amount_cents: number | null; cap_spent_cents: number }) {
   if (!cap.cap_amount_cents) return null;
@@ -325,6 +446,7 @@ export default function CardsPage() {
               ))}
             </ul>
             <AddCategoryRow cardId={card.id} onSaved={load} />
+            <PromoSection cardId={card.id} />
           </div>
         ))}
       </div>

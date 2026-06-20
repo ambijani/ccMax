@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { classifyMerchant } from "@/lib/ai/classifyMerchant";
 import { rankCardsForPurchase } from "@/lib/recommend";
-import type { CardWithCategories, PointsValuation, UserCppOverride } from "@/lib/types";
+import type { CardPromo, CardWithCategories, PointsValuation, UserCppOverride } from "@/lib/types";
+
+function matchesPromo(merchantName: string, promo: CardPromo): boolean {
+  if (!promo.merchant_keywords || promo.merchant_keywords.length === 0) return false;
+  if (promo.expires_at && new Date(promo.expires_at) < new Date()) return false;
+  const merchantLower = merchantName.toLowerCase();
+  return promo.merchant_keywords.some(
+    (kw) => merchantLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(merchantLower),
+  );
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -55,5 +64,21 @@ export async function POST(request: Request) {
     overridesByProgram,
   );
 
-  return NextResponse.json({ classification, ranked, valuations: valuationsByProgram });
+  const cardIds = (cards ?? []).map((c) => c.id);
+  const { data: promos } = await supabase
+    .from("card_promos")
+    .select("*")
+    .in("card_id", cardIds.length ? cardIds : ["__none__"])
+    .returns<CardPromo[]>();
+
+  const matchedPromos = (promos ?? [])
+    .filter((p) => matchesPromo(merchantName, p))
+    .map((p) => ({ ...p, card: (cards ?? []).find((c) => c.id === p.card_id) }));
+
+  return NextResponse.json({
+    classification,
+    ranked,
+    valuations: valuationsByProgram,
+    matched_promos: matchedPromos,
+  });
 }

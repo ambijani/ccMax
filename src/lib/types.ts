@@ -45,6 +45,21 @@ export interface PointsValuation {
   last_updated: string;
 }
 
+export interface CardPromo {
+  id: string;
+  card_id: string;
+  title: string;
+  description: string;
+  merchant_keywords: string[] | null;
+  value_cents: number | null;
+  value_percent: number | null;
+  terms: string | null;
+  source_text: string | null;
+  source_url: string | null;
+  expires_at: string | null;
+  discovered_at: string;
+}
+
 export interface UserCppOverride {
   id: string;
   user_id: string;

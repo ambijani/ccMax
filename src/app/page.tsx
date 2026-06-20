@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import AddCardFlow from "@/components/AddCardFlow";
 import { formatEarnRate, rewardUnit } from "@/lib/format";
-import type { CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
+import type { CardPromo, CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
+
+interface MatchedPromo extends CardPromo {
+  card?: CardWithCategories;
+}
 
 interface RecommendResponse {
   classification: {
@@ -15,6 +19,13 @@ interface RecommendResponse {
   };
   ranked: RankedCardResult[];
   valuations: Record<string, PointsValuation>;
+  matched_promos: MatchedPromo[];
+}
+
+function formatPromoValue(promo: CardPromo) {
+  if (promo.value_cents) return `$${(promo.value_cents / 100).toFixed(0)} off`;
+  if (promo.value_percent) return `${promo.value_percent}% off`;
+  return null;
 }
 
 function formatCents(cents: number) {
@@ -180,6 +191,36 @@ export default function Home() {
               ),
             )}
           </div>
+        </div>
+      )}
+
+      {result && result.matched_promos.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {result.matched_promos.map((p) => (
+            <div
+              key={p.id}
+              className="rounded-lg border border-emerald-800 bg-emerald-950 px-3 py-2 text-sm"
+            >
+              <p className="font-medium text-emerald-200">
+                💡 {p.card?.name ?? "A card"}: {p.title}
+                {formatPromoValue(p) && (
+                  <span className="ml-2 text-emerald-400">{formatPromoValue(p)}</span>
+                )}
+              </p>
+              <p className="mt-1 text-xs text-emerald-300">{p.description}</p>
+              {p.terms && <p className="mt-1 text-xs text-emerald-400">Terms: {p.terms}</p>}
+              {p.source_url && (
+                <a
+                  href={p.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-block text-xs text-emerald-300 hover:underline"
+                >
+                  Source →
+                </a>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
