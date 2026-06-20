@@ -20,6 +20,12 @@ function formatCents(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function rewardUnit(rewardType: "cash_back" | "points" | "miles") {
+  if (rewardType === "cash_back") return "cash back";
+  if (rewardType === "miles") return "miles";
+  return "points";
+}
+
 export default function Home() {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
@@ -186,14 +192,21 @@ export default function Home() {
             <div>
               <p className="text-xs uppercase tracking-wide text-indigo-400">
                 {overrideCategory ?? result?.classification.category} ·{" "}
-                {top.earn_rate}× {top.card.reward_type === "cash_back" ? "cash back" : "points"}
+                {top.earn_rate}× {rewardUnit(top.card.reward_type)}
               </p>
               <h2 className="text-xl font-semibold">{top.card.name}</h2>
               <p className="text-sm text-slate-400">{top.card.issuer}</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-400">
-              {formatCents(top.dollar_value_cents)}
-            </p>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatCents(top.dollar_value_cents)}
+              </p>
+              {top.card.reward_type !== "cash_back" && (
+                <p className="text-xs text-slate-500">
+                  {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
+                </p>
+              )}
+            </div>
           </div>
 
           <button
