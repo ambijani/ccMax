@@ -72,6 +72,7 @@ export const REWARD_CATEGORIES = [
   "Streaming",
   "Pharmacy",
   "Online Shopping",
+  "Entertainment",
   "General",
 ] as const;
 
