@@ -106,7 +106,7 @@ export default function Home() {
   if (cards === null) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <p className="text-sm text-slate-400">Loading...</p>
+        <p className="font-mono text-sm text-ink-500">Loading...</p>
       </main>
     );
   }
@@ -114,8 +114,9 @@ export default function Home() {
   if (cards.length === 0) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="mb-1 text-2xl font-semibold">Welcome!</h1>
-        <p className="mb-6 text-sm text-slate-400">
+        <p className="mb-1 font-mono text-xs tracking-[0.2em] text-foil uppercase">First entry</p>
+        <h1 className="mb-1 font-display text-2xl font-medium text-ink-100">Welcome to the ledger</h1>
+        <p className="mb-6 text-sm text-ink-500">
           Add your first credit card to start getting recommendations.
         </p>
         <AddCardFlow onSaved={() => fetch("/api/cards").then((r) => r.json()).then(setCards)} />
@@ -125,10 +126,10 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold">What should I use?</h1>
-      <p className="mb-6 text-sm text-slate-400">
-        Enter what you&apos;re buying (item or merchant) and the amount to get a sourced
-        recommendation.
+      <p className="mb-1 font-mono text-xs tracking-[0.2em] text-foil uppercase">New entry</p>
+      <h1 className="mb-1 font-display text-2xl font-medium text-ink-100">What should I use?</h1>
+      <p className="mb-6 text-sm text-ink-500">
+        Enter what you&apos;re buying and the amount — we&apos;ll pull the right card.
       </p>
 
       <form
@@ -137,42 +138,54 @@ export default function Home() {
           setOverrideCategory(null);
           lookup();
         }}
-        className="flex flex-col gap-3 sm:flex-row"
+        className="flex flex-col gap-4 sm:flex-row sm:items-end"
       >
-        <input
-          value={merchant}
-          onChange={(e) => setMerchant(e.target.value)}
-          placeholder="Item or merchant (e.g. Costco, plane ticket, groceries)"
-          required
-          className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
-        />
-        <input
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none sm:w-32"
-        />
+        <div className="flex-1">
+          <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
+            Item or merchant
+          </label>
+          <input
+            value={merchant}
+            onChange={(e) => setMerchant(e.target.value)}
+            placeholder="Costco, plane ticket, groceries..."
+            required
+            className="field-line w-full text-sm"
+          />
+        </div>
+        <div className="sm:w-32">
+          <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
+            Amount
+          </label>
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            className="field-line tabular w-full text-sm"
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+          className="bg-foil px-4 py-2 text-sm font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
         >
           {loading ? "Thinking..." : "Find my card"}
         </button>
       </form>
 
       {error && (
-        <p className="mt-4 rounded-lg bg-red-950 px-3 py-2 text-sm text-red-300">{error}</p>
+        <p className="mt-4 border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
+          {error}
+        </p>
       )}
 
       {result?.classification.ambiguous && (
-        <div className="mt-4 rounded-lg border border-amber-800 bg-amber-950 px-3 py-2 text-sm text-amber-200">
-          <p className="mb-2">
-            Not sure whether this is <strong>{result.classification.category}</strong> or
+        <div className="mt-4 border border-ledger-700 bg-ledger-900 px-4 py-3 text-sm">
+          <p className="mb-2 text-ink-300">
+            Not sure whether this is <strong className="text-ink-100">{result.classification.category}</strong> or
             another category: {result.classification.reasoning}
           </p>
           <div className="flex gap-2">
@@ -184,7 +197,7 @@ export default function Home() {
                     setOverrideCategory(cat);
                     lookup(cat);
                   }}
-                  className="rounded-md border border-amber-700 px-2 py-1 text-xs hover:bg-amber-900"
+                  className="border border-foil/40 px-2 py-1 font-mono text-xs text-foil hover:bg-foil/10"
                 >
                   Use {cat}
                 </button>
@@ -197,24 +210,21 @@ export default function Home() {
       {result && result.matched_promos.length > 0 && (
         <div className="mt-4 space-y-2">
           {result.matched_promos.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-lg border border-emerald-800 bg-emerald-950 px-3 py-2 text-sm"
-            >
-              <p className="font-medium text-emerald-200">
-                💡 {p.card?.name ?? "A card"}: {p.title}
+            <div key={p.id} className="border-l-2 border-signal bg-ledger-900 px-4 py-3 text-sm">
+              <p className="font-medium text-signal">
+                {p.card?.name ?? "A card"} · {p.title}
                 {formatPromoValue(p) && (
-                  <span className="ml-2 text-emerald-400">{formatPromoValue(p)}</span>
+                  <span className="ml-2 font-mono text-ink-100">{formatPromoValue(p)}</span>
                 )}
               </p>
-              <p className="mt-1 text-xs text-emerald-300">{p.description}</p>
-              {p.terms && <p className="mt-1 text-xs text-emerald-400">Terms: {p.terms}</p>}
+              <p className="mt-1 text-xs text-ink-500">{p.description}</p>
+              {p.terms && <p className="mt-1 text-xs text-ink-500">Terms: {p.terms}</p>}
               {p.source_url && (
                 <a
                   href={p.source_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-block text-xs text-emerald-300 hover:underline"
+                  className="mt-1 inline-block font-mono text-xs text-signal hover:underline"
                 >
                   Source →
                 </a>
@@ -225,191 +235,202 @@ export default function Home() {
       )}
 
       {top && (
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-indigo-400">
-                {overrideCategory ?? result?.classification.category} ·{" "}
-                {formatEarnRate(top.card.reward_type, top.earn_rate)}
-              </p>
-              <h2 className="text-xl font-semibold">{top.card.name}</h2>
-              <p className="text-sm text-slate-400">{top.card.issuer}</p>
+        <div className="mt-6">
+          {/* Card silhouette — the recommended physical card */}
+          <div className="mx-auto flex aspect-[1.6/1] w-full max-w-md flex-col justify-between rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 p-6 shadow-[0_0_50px_-15px_rgba(199,162,78,0.3)]">
+            <div className="flex items-start justify-between font-mono text-xs tracking-[0.15em] text-ink-500 uppercase">
+              <span>{top.card.issuer}</span>
+              <span>{top.card.network}</span>
             </div>
-            <div className="text-right">
+
+            <div>
               {top.card.reward_type === "cash_back" ? (
-                <p className="text-2xl font-bold text-emerald-400">
+                <p className="font-mono text-4xl font-semibold tracking-tight text-foil">
                   {formatCents(top.dollar_value_cents)}
                 </p>
               ) : (
                 <>
-                  <p className="text-2xl font-bold text-emerald-400">
-                    {Math.round(top.points_earned).toLocaleString()}{" "}
-                    {rewardUnit(top.card.reward_type)}
+                  <p className="font-mono text-4xl font-semibold tracking-tight text-foil">
+                    {Math.round(top.points_earned).toLocaleString()}
                   </p>
-                  <p className="text-xs text-slate-500">
-                    ≈ {formatCents(top.dollar_value_cents)}
+                  <p className="mt-0.5 font-mono text-sm text-ink-500">
+                    {rewardUnit(top.card.reward_type)} · ≈ {formatCents(top.dollar_value_cents)}
                   </p>
                 </>
               )}
             </div>
+
+            <div>
+              <div className="-mx-6 mb-3 h-2.5 bg-ledger-950/70" />
+              <div className="flex items-end justify-between">
+                <p className="font-display text-sm font-medium tracking-wide text-ink-100 uppercase">
+                  {top.card.name}
+                </p>
+                <p className="font-mono text-xs text-ink-500">
+                  {overrideCategory ?? result?.classification.category} ·{" "}
+                  {formatEarnRate(top.card.reward_type, top.earn_rate)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={() => setShowCalc((v) => !v)}
-            className="mt-2 text-xs text-slate-400 hover:text-slate-200"
-          >
-            {showCalc ? "Hide" : "Show"} calculation
-          </button>
-          {showCalc && (
-            <div className="mt-2 rounded-lg bg-slate-950 p-3 text-xs text-slate-400">
-              {top.card.reward_type === "cash_back" ? (
-                <p>
-                  ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}% cash back ={" "}
-                  <span className="text-slate-200">{formatCents(top.dollar_value_cents)}</span>
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  <p>
-                    ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}×{" "}
-                    {rewardUnit(top.card.reward_type)} ={" "}
-                    <span className="text-slate-200">
-                      {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
-                    </span>
-                  </p>
-                  <p>
-                    {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)} ×{" "}
-                    {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} (
-                    {top.cpp_source === "override"
-                      ? "your custom valuation"
-                      : top.cpp_source === "community"
-                        ? "community valuation"
-                        : "default — no valuation researched yet"}
-                    ) ={" "}
-                    <span className="text-slate-200">{formatCents(top.dollar_value_cents)}</span>{" "}
-                    estimated value
-                  </p>
-                  {top.cpp_source === "default" && (
-                    <p className="text-amber-400">
-                      No community valuation found for {top.card.reward_program} yet — using a
-                      conservative 1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
-                      Set a custom valuation in Settings for a more accurate estimate.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            onClick={logPurchase}
-            disabled={logging || logged}
-            className="mt-4 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-          >
-            {logged ? "Logged ✓" : logging ? "Logging..." : "I used this card — log it"}
-          </button>
-
-          {top.matched_category?.cap_amount_cents && top.cap_percent_used !== null && top.cap_percent_used > 50 && (
-            <div className="mt-4">
-              <div className="mb-1 flex justify-between text-xs text-slate-400">
-                <span>
-                  {top.matched_category.category} cap ({top.matched_category.cap_period})
-                </span>
-                <span>{Math.min(top.cap_percent_used, 100).toFixed(0)}% used</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className={`h-full ${top.cap_status === "warning" ? "bg-amber-500" : "bg-indigo-500"}`}
-                  style={{ width: `${Math.min(top.cap_percent_used, 100)}%` }}
-                />
-              </div>
-              {top.cap_status === "warning" && (
-                <p className="mt-1 text-xs text-amber-400">
-                  Approaching the cap for this category — consider a backup card soon.
-                </p>
-              )}
-            </div>
-          )}
-
-          {top.matched_category && (
-            <div className="mt-5 rounded-lg bg-slate-950 p-3">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                Why this card
-              </p>
-              <p className="text-sm italic text-slate-300">
-                &ldquo;{top.matched_category.source_text}&rdquo;
-              </p>
-              {top.matched_category.source_url && (
-                <a
-                  href={top.matched_category.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-block text-xs text-indigo-400 hover:underline"
-                >
-                  View official terms →
-                </a>
-              )}
-            </div>
-          )}
-
-          {topValuation && (
-            <div className="mt-3 rounded-lg bg-slate-950 p-3">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                Community take
-              </p>
-              <p className="text-sm text-slate-300">{topValuation.valuation_notes}</p>
-              {topValuation.sources?.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {topValuation.sources.slice(0, 3).map((s) => (
-                    <a
-                      key={s.url}
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-indigo-400 hover:underline"
-                    >
-                      {s.title}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {runnerUps.length > 0 && (
-            <div className="mt-4">
+          {/* Ledger entries — supporting detail */}
+          <div className="mt-5 divide-y divide-ledger-800 border-y border-ledger-800">
+            <div className="flex items-center justify-between py-3">
               <button
-                onClick={() => setShowRunnerUps((v) => !v)}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                onClick={() => setShowCalc((v) => !v)}
+                className="font-mono text-xs text-ink-500 hover:text-ink-100"
               >
-                {showRunnerUps ? "Hide" : "Show"} runner-up cards ({runnerUps.length})
+                {showCalc ? "Hide" : "Show"} calculation
               </button>
-              {showRunnerUps && (
-                <ul className="mt-2 space-y-2">
-                  {runnerUps.map((r) => (
-                    <li
-                      key={r.card.id}
-                      className="flex items-center justify-between rounded-lg bg-slate-950 px-3 py-2 text-sm"
-                    >
-                      <span className={r.excluded ? "text-slate-500" : "text-slate-200"}>
-                        {r.card.name} — {formatEarnRate(r.card.reward_type, r.earn_rate)}
-                        {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
-                      </span>
-                      <span className="text-slate-400">
-                        {r.card.reward_type === "cash_back"
-                          ? formatCents(r.dollar_value_cents)
-                          : `${Math.round(r.points_earned).toLocaleString()} ${rewardUnit(r.card.reward_type)} (≈ ${formatCents(r.dollar_value_cents)})`}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <button
+                onClick={logPurchase}
+                disabled={logging || logged}
+                className="bg-foil px-3 py-1.5 font-mono text-xs font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
+              >
+                {logged ? "Logged ✓" : logging ? "Logging..." : "I used this card — log it"}
+              </button>
             </div>
-          )}
+
+            {showCalc && (
+              <div className="border-l-2 border-foil/40 py-3 pl-3 font-mono text-xs text-ink-500">
+                {top.card.reward_type === "cash_back" ? (
+                  <p>
+                    ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}% cash back ={" "}
+                    <span className="text-ink-100">{formatCents(top.dollar_value_cents)}</span>
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    <p>
+                      ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}×{" "}
+                      {rewardUnit(top.card.reward_type)} ={" "}
+                      <span className="text-ink-100">
+                        {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
+                      </span>
+                    </p>
+                    <p>
+                      {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)} ×{" "}
+                      {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} (
+                      {top.cpp_source === "override"
+                        ? "your custom valuation"
+                        : top.cpp_source === "community"
+                          ? "community valuation"
+                          : "default — no valuation researched yet"}
+                      ) = <span className="text-ink-100">{formatCents(top.dollar_value_cents)}</span>{" "}
+                      estimated value
+                    </p>
+                    {top.cpp_source === "default" && (
+                      <p className="text-alert">
+                        No community valuation found for {top.card.reward_program} yet — using a
+                        conservative 1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
+                        Set a custom valuation in Settings for a more accurate estimate.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {top.matched_category?.cap_amount_cents && top.cap_percent_used !== null && top.cap_percent_used > 50 && (
+              <div className="py-3">
+                <div className="mb-1.5 flex justify-between font-mono text-xs text-ink-500">
+                  <span>
+                    {top.matched_category.category} cap ({top.matched_category.cap_period})
+                  </span>
+                  <span>{Math.min(top.cap_percent_used, 100).toFixed(0)}% used</span>
+                </div>
+                <div className="h-1 w-full bg-ledger-800">
+                  <div
+                    className={`h-full ${top.cap_status === "warning" ? "bg-alert" : "bg-foil"}`}
+                    style={{ width: `${Math.min(top.cap_percent_used, 100)}%` }}
+                  />
+                </div>
+                {top.cap_status === "warning" && (
+                  <p className="mt-1.5 font-mono text-xs text-alert">
+                    Approaching the cap for this category — consider a backup card soon.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {top.matched_category?.source_text && (
+              <div className="py-3">
+                <p className="mb-1 font-mono text-xs tracking-wide text-ink-500 uppercase">
+                  Why this card
+                </p>
+                <p className="text-sm text-ink-300 italic">
+                  &ldquo;{top.matched_category.source_text}&rdquo;
+                </p>
+                {top.matched_category.source_url && (
+                  <a
+                    href={top.matched_category.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block font-mono text-xs text-foil hover:underline"
+                  >
+                    View official terms →
+                  </a>
+                )}
+              </div>
+            )}
+
+            {topValuation && (
+              <div className="py-3">
+                <p className="mb-1 font-mono text-xs tracking-wide text-ink-500 uppercase">
+                  Community take
+                </p>
+                <p className="text-sm text-ink-300">{topValuation.valuation_notes}</p>
+                {topValuation.sources?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    {topValuation.sources.slice(0, 3).map((s) => (
+                      <a
+                        key={s.url}
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-xs text-foil hover:underline"
+                      >
+                        {s.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {runnerUps.length > 0 && (
+              <div className="py-3">
+                <button
+                  onClick={() => setShowRunnerUps((v) => !v)}
+                  className="font-mono text-xs text-ink-500 hover:text-ink-100"
+                >
+                  {showRunnerUps ? "Hide" : "Show"} runner-up cards ({runnerUps.length})
+                </button>
+                {showRunnerUps && (
+                  <ul className="mt-2 divide-y divide-ledger-800">
+                    {runnerUps.map((r) => (
+                      <li key={r.card.id} className="flex items-center justify-between py-2 text-sm">
+                        <span className={r.excluded ? "text-ink-500" : "text-ink-300"}>
+                          {r.card.name} — {formatEarnRate(r.card.reward_type, r.earn_rate)}
+                          {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
+                        </span>
+                        <span className="font-mono text-xs text-ink-500">
+                          {r.card.reward_type === "cash_back"
+                            ? formatCents(r.dollar_value_cents)
+                            : `${Math.round(r.points_earned).toLocaleString()} ${rewardUnit(r.card.reward_type)} (≈ ${formatCents(r.dollar_value_cents)})`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {result && result.ranked.length === 0 && (
-        <p className="mt-6 text-sm text-slate-400">
+        <p className="mt-6 text-sm text-ink-500">
           You don&apos;t have any cards yet — add one on the My Cards page.
         </p>
       )}

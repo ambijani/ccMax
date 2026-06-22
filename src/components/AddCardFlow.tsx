@@ -15,8 +15,8 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <label className={`block text-xs text-slate-400 ${className ?? ""}`}>
-      <span className="mb-1 block">{label}</span>
+    <label className={`block font-mono text-xs text-ink-500 ${className ?? ""}`}>
+      <span className="mb-1 block uppercase tracking-wide">{label}</span>
       {children}
     </label>
   );
@@ -113,7 +113,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+        className="bg-foil px-4 py-2 text-sm font-medium text-ledger-950 hover:bg-foil-dim"
       >
         + Add card
       </button>
@@ -121,37 +121,37 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <div className="border border-ledger-700 bg-ledger-900 p-6">
       {!draft && (
         <>
-          <p className="mb-3 text-sm text-slate-400">
+          <p className="mb-3 text-sm text-ink-500">
             Enter the card name and Claude will research its official benefits. You&apos;ll be
             able to review and edit everything before saving.
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
               placeholder="e.g. Chase Sapphire Reserve"
-              className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
+              className="field-line min-w-48 flex-1 text-sm"
             />
             <button
               onClick={research}
               disabled={loading || !cardName}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="bg-foil px-4 py-2 text-sm font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
             >
               {loading ? "Researching..." : "Research"}
             </button>
             <button
               onClick={() => setDraft(emptyCardDraft(cardName))}
               disabled={!cardName}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              className="border border-ledger-700 px-3 py-2 text-sm text-ink-300 hover:bg-ledger-800 disabled:opacity-50"
             >
               Enter manually
             </button>
             <button
               onClick={() => setOpen(false)}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              className="border border-ledger-700 px-3 py-2 text-sm text-ink-300 hover:bg-ledger-800"
             >
               Cancel
             </button>
@@ -161,22 +161,22 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
 
       {draft && (
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <p className="mb-3 font-mono text-xs tracking-wide text-ink-500 uppercase">
             Card details — edit anything Claude got wrong
           </p>
-          <div className="mb-4 grid grid-cols-2 gap-2">
+          <div className="mb-6 grid grid-cols-2 gap-4">
             <Field label="Card name">
               <input
                 value={draft.name}
                 onChange={(e) => updateDraftField("name", e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line w-full text-sm"
               />
             </Field>
             <Field label="Issuer">
               <input
                 value={draft.issuer}
                 onChange={(e) => updateDraftField("issuer", e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line w-full text-sm"
               />
             </Field>
             <Field label="Network">
@@ -184,7 +184,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                 value={draft.network}
                 onChange={(e) => updateDraftField("network", e.target.value)}
                 placeholder="Visa, Mastercard, Amex..."
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line w-full text-sm"
               />
             </Field>
             <Field label="Reward type">
@@ -193,7 +193,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                 onChange={(e) =>
                   updateDraftField("reward_type", e.target.value as CardIngestionResult["reward_type"])
                 }
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="w-full border border-ledger-700 bg-ledger-900 px-2 py-1.5 text-sm text-ink-100"
               >
                 <option value="cash_back">Cash back</option>
                 <option value="points">Points</option>
@@ -205,44 +205,43 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                 value={draft.reward_program}
                 onChange={(e) => updateDraftField("reward_program", e.target.value)}
                 placeholder='e.g. "Capital One Miles"'
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line w-full text-sm"
               />
             </Field>
-            <Field
-              label={
-                draft.reward_type === "cash_back"
-                  ? "Base earn rate (% cash back, non-bonus purchases)"
-                  : `Base earn rate (× ${rewardUnit(draft.reward_type)} per $1, non-bonus purchases)`
-              }
-            >
+            <Field label="Base earn rate (non-bonus purchases)">
               <input
                 type="number"
                 step="0.1"
                 value={draft.base_earn_rate}
                 onChange={(e) => updateDraftField("base_earn_rate", parseFloat(e.target.value) || 0)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line tabular w-full text-sm"
               />
+              <span className="mt-1 block text-[11px] normal-case text-ink-500">
+                {draft.reward_type === "cash_back"
+                  ? "% cash back"
+                  : `× ${rewardUnit(draft.reward_type)} per $1`}
+              </span>
             </Field>
             <Field label="Terms URL" className="col-span-2">
               <input
                 value={draft.terms_url ?? ""}
                 onChange={(e) => updateDraftField("terms_url", e.target.value || null)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm"
+                className="field-line w-full text-sm"
               />
             </Field>
           </div>
 
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <p className="mb-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
             Bonus categories — edit, paste your own benefits text, or remove
           </p>
-          <ul className="space-y-3">
+          <ul className="divide-y divide-ledger-800 border-y border-ledger-800">
             {draft.categories.map((c, i) => (
-              <li key={i} className="rounded-lg bg-slate-950 p-3 text-sm">
+              <li key={i} className="py-3 text-sm">
                 <div className="flex items-center gap-2">
                   <select
                     value={c.category}
                     onChange={(e) => updateCategory(i, { category: e.target.value })}
-                    className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+                    className="border border-ledger-700 bg-ledger-900 px-2 py-1 text-sm text-ink-100"
                   >
                     {REWARD_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -257,14 +256,14 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                     onChange={(e) =>
                       updateCategory(i, { earn_rate: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-20 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+                    className="field-line tabular w-20"
                   />
-                  <span className="text-xs text-slate-500">
+                  <span className="font-mono text-xs text-ink-500">
                     {draft.reward_type === "cash_back" ? "%" : `× ${rewardUnit(draft.reward_type)}`}
                   </span>
                   <button
                     onClick={() => removeCategory(i)}
-                    className="ml-auto rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                    className="ml-auto border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
                   >
                     Remove
                   </button>
@@ -279,7 +278,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                         cap_amount_cents: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null,
                       })
                     }
-                    className="w-32 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                    className="field-line tabular w-32 text-xs"
                   />
                   <select
                     value={c.cap_period ?? ""}
@@ -290,7 +289,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                           : null,
                       })
                     }
-                    className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                    className="border border-ledger-700 bg-ledger-900 px-2 py-1 text-xs text-ink-100"
                   >
                     <option value="">No cap period</option>
                     <option value="quarterly">Quarterly</option>
@@ -302,35 +301,35 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                   onChange={(e) => updateCategory(i, { source_text: e.target.value })}
                   placeholder="Paste the benefit text from the issuer's terms page, or edit Claude's research..."
                   rows={2}
-                  className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs italic text-slate-300 placeholder:text-slate-500"
+                  className="field-line mt-2 w-full text-xs text-ink-300 italic placeholder:text-ink-500"
                 />
                 <input
                   value={c.source_url ?? ""}
                   onChange={(e) => updateCategory(i, { source_url: e.target.value || null })}
                   placeholder="Source URL"
-                  className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+                  className="field-line mt-1 w-full text-xs"
                 />
               </li>
             ))}
           </ul>
           <button
             onClick={addCategory}
-            className="mt-2 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+            className="mt-3 font-mono text-xs text-ink-500 hover:text-foil"
           >
             + Add category
           </button>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-5 flex gap-2">
             <button
               onClick={confirmSave}
               disabled={saving}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+              className="bg-signal px-4 py-2 text-sm font-medium text-ledger-950 hover:opacity-90 disabled:opacity-50"
             >
               {saving ? "Saving..." : "Confirm & save"}
             </button>
             <button
               onClick={() => setDraft(null)}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              className="border border-ledger-700 px-3 py-2 text-sm text-ink-300 hover:bg-ledger-800"
             >
               Start over
             </button>
@@ -339,7 +338,9 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
       )}
 
       {error && (
-        <p className="mt-3 rounded-lg bg-red-950 px-3 py-2 text-sm text-red-300">{error}</p>
+        <p className="mt-3 border border-alert/40 bg-alert/10 px-3 py-2 text-sm text-alert">
+          {error}
+        </p>
       )}
     </div>
   );

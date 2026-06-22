@@ -58,46 +58,46 @@ function PromoSection({ cardId }: { cardId: string }) {
   }
 
   return (
-    <div className="mt-3">
+    <div className="py-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="font-mono text-xs tracking-wide text-ink-500 uppercase">
           Active promos &amp; offers
         </p>
         <button
           onClick={research}
           disabled={researching}
-          className="text-xs text-indigo-400 hover:underline disabled:opacity-50"
+          className="font-mono text-xs text-foil hover:underline disabled:opacity-50"
         >
           {researching ? "Searching Reddit/DoC..." : "Check for active promos"}
         </button>
       </div>
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1 font-mono text-xs text-alert">{error}</p>}
       {!loading && promos.length === 0 && !researching && (
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-500">
           None found yet — click &quot;Check for active promos&quot; to search.
         </p>
       )}
       {promos.length > 0 && (
-        <ul className="mt-2 space-y-2">
+        <ul className="mt-2 divide-y divide-ledger-800">
           {promos.map((p) => (
-            <li key={p.id} className="rounded-lg bg-slate-950 p-3 text-sm">
+            <li key={p.id} className="py-2.5 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-ink-100">
                     {p.title}
                     {formatPromoValue(p) && (
-                      <span className="ml-2 text-emerald-400">{formatPromoValue(p)}</span>
+                      <span className="ml-2 font-mono text-signal">{formatPromoValue(p)}</span>
                     )}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">{p.description}</p>
+                  <p className="mt-1 text-xs text-ink-500">{p.description}</p>
                   {p.merchant_keywords && p.merchant_keywords.length > 0 && (
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 font-mono text-xs text-ink-500">
                       Eligible at: {p.merchant_keywords.join(", ")}
                     </p>
                   )}
-                  {p.terms && <p className="mt-1 text-xs text-slate-500">Terms: {p.terms}</p>}
+                  {p.terms && <p className="mt-1 text-xs text-ink-500">Terms: {p.terms}</p>}
                   {p.expires_at && (
-                    <p className="mt-1 text-xs text-amber-400">
+                    <p className="mt-1 font-mono text-xs text-alert">
                       Expires {new Date(p.expires_at).toLocaleDateString()}
                     </p>
                   )}
@@ -106,7 +106,7 @@ function PromoSection({ cardId }: { cardId: string }) {
                       href={p.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-block text-xs text-indigo-400 hover:underline"
+                      className="mt-1 inline-block font-mono text-xs text-foil hover:underline"
                     >
                       Source →
                     </a>
@@ -114,7 +114,7 @@ function PromoSection({ cardId }: { cardId: string }) {
                 </div>
                 <button
                   onClick={() => remove(p.id)}
-                  className="shrink-0 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                  className="shrink-0 border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
                 >
                   Dismiss
                 </button>
@@ -189,14 +189,14 @@ function CategoryRow({
 
   if (!editing) {
     return (
-      <li className="rounded-lg bg-slate-950 p-3 text-sm">
+      <li className="py-3 text-sm">
         <div className="flex items-center justify-between">
-          <span>{cat.category}</span>
-          <div className="flex items-center gap-2">
-            <span>{formatEarnRate(rewardType, cat.earn_rate)}</span>
+          <span className="text-ink-100">{cat.category}</span>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-ink-300">{formatEarnRate(rewardType, cat.earn_rate)}</span>
             <button
               onClick={() => setEditing(true)}
-              className="text-xs text-indigo-400 hover:underline"
+              className="font-mono text-xs text-foil hover:underline"
             >
               Edit
             </button>
@@ -204,13 +204,13 @@ function CategoryRow({
         </div>
         {pct !== null && (
           <div className="mt-2">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="h-1 w-full bg-ledger-800">
               <div
-                className={`h-full ${pct >= 100 ? "bg-red-500" : pct > 80 ? "bg-amber-500" : "bg-indigo-500"}`}
+                className={`h-full ${pct >= 100 ? "bg-alert" : pct > 80 ? "bg-alert/70" : "bg-foil"}`}
                 style={{ width: `${Math.min(pct, 100)}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 font-mono text-xs text-ink-500">
               ${(cat.cap_spent_cents / 100).toFixed(0)} / $
               {((cat.cap_amount_cents ?? 0) / 100).toFixed(0)} ({cat.cap_period})
               {pct >= 100 && " — cap hit"}
@@ -218,19 +218,17 @@ function CategoryRow({
           </div>
         )}
         {(cat.source_text || cat.source_url) && (
-          <div className="mt-2 rounded-md bg-slate-900 p-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Research
-            </p>
+          <div className="mt-2 border-l-2 border-ledger-700 pl-3">
+            <p className="font-mono text-xs tracking-wide text-ink-500 uppercase">Research</p>
             {cat.source_text && (
-              <p className="mt-1 text-xs italic text-slate-400">&ldquo;{cat.source_text}&rdquo;</p>
+              <p className="mt-1 text-xs text-ink-500 italic">&ldquo;{cat.source_text}&rdquo;</p>
             )}
             {cat.source_url && (
               <a
                 href={cat.source_url}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 inline-block text-xs text-indigo-400 hover:underline"
+                className="mt-1 inline-block font-mono text-xs text-foil hover:underline"
               >
                 Source →
               </a>
@@ -242,12 +240,12 @@ function CategoryRow({
   }
 
   return (
-    <li className="rounded-lg bg-slate-950 p-3 text-sm">
+    <li className="py-3 text-sm">
       <div className="flex items-center gap-2">
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+          className="border border-ledger-700 bg-ledger-900 px-2 py-1 text-sm text-ink-100"
         >
           {REWARD_CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -260,9 +258,9 @@ function CategoryRow({
           step="0.1"
           value={earnRate}
           onChange={(e) => setEarnRate(parseFloat(e.target.value) || 0)}
-          className="w-20 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm"
+          className="field-line tabular w-20"
         />
-        <span className="text-xs text-slate-500">×</span>
+        <span className="font-mono text-xs text-ink-500">×</span>
       </div>
       <div className="mt-2 flex items-center gap-2">
         <input
@@ -270,12 +268,12 @@ function CategoryRow({
           placeholder="Cap $ (optional)"
           value={capDollars}
           onChange={(e) => setCapDollars(e.target.value)}
-          className="w-32 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+          className="field-line tabular w-32 text-xs"
         />
         <select
           value={capPeriod}
           onChange={(e) => setCapPeriod(e.target.value as "" | "quarterly" | "annual")}
-          className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+          className="border border-ledger-700 bg-ledger-900 px-2 py-1 text-xs text-ink-100"
         >
           <option value="">No cap period</option>
           <option value="quarterly">Quarterly</option>
@@ -287,31 +285,31 @@ function CategoryRow({
         onChange={(e) => setSourceText(e.target.value)}
         placeholder="Paste benefit text / source quote..."
         rows={2}
-        className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs italic text-slate-300 placeholder:text-slate-500"
+        className="field-line mt-2 w-full text-xs text-ink-300 italic placeholder:text-ink-500"
       />
       <input
         value={sourceUrl}
         onChange={(e) => setSourceUrl(e.target.value)}
         placeholder="Source URL"
-        className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+        className="field-line mt-1 w-full text-xs"
       />
       <div className="mt-2 flex gap-2">
         <button
           onClick={save}
           disabled={saving}
-          className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="bg-signal px-3 py-1 font-mono text-xs font-medium text-ledger-950 hover:opacity-90 disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save"}
         </button>
         <button
           onClick={() => setEditing(false)}
-          className="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:bg-slate-800"
+          className="border border-ledger-700 px-3 py-1 font-mono text-xs text-ink-300 hover:bg-ledger-800"
         >
           Cancel
         </button>
         <button
           onClick={remove}
-          className="ml-auto rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-400 hover:bg-slate-800"
+          className="ml-auto border border-ledger-700 px-3 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
         >
           Remove
         </button>
@@ -328,12 +326,14 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
 
   if (!adding) {
     return (
-      <button
-        onClick={() => setAdding(true)}
-        className="mt-2 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-      >
-        + Add category
-      </button>
+      <div className="py-3">
+        <button
+          onClick={() => setAdding(true)}
+          className="font-mono text-xs text-ink-500 hover:text-foil"
+        >
+          + Add category
+        </button>
+      </div>
     );
   }
 
@@ -353,11 +353,11 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
   }
 
   return (
-    <div className="mt-2 flex items-center gap-2">
+    <div className="flex items-center gap-2 py-3">
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
-        className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+        className="border border-ledger-700 bg-ledger-900 px-2 py-1 text-xs text-ink-100"
       >
         {REWARD_CATEGORIES.map((c) => (
           <option key={c} value={c}>
@@ -370,18 +370,18 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
         step="0.1"
         value={earnRate}
         onChange={(e) => setEarnRate(parseFloat(e.target.value) || 0)}
-        className="w-16 rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs"
+        className="field-line tabular w-16 text-xs"
       />
       <button
         onClick={save}
         disabled={saving}
-        className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-500 disabled:opacity-50"
+        className="bg-signal px-2 py-1 font-mono text-xs text-ledger-950 hover:opacity-90 disabled:opacity-50"
       >
         Save
       </button>
       <button
         onClick={() => setAdding(false)}
-        className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+        className="border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-300 hover:bg-ledger-800"
       >
         Cancel
       </button>
@@ -407,46 +407,59 @@ export default function CardsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My Cards</h1>
+        <div>
+          <p className="mb-1 font-mono text-xs tracking-[0.2em] text-foil uppercase">The wallet</p>
+          <h1 className="font-display text-2xl font-medium text-ink-100">My Cards</h1>
+        </div>
         <AddCardFlow onSaved={load} />
       </div>
 
-      {loading && <p className="text-sm text-slate-400">Loading...</p>}
+      {loading && <p className="font-mono text-sm text-ink-500">Loading...</p>}
 
       {!loading && cards.length === 0 && (
-        <p className="text-sm text-slate-400">No cards yet — add your first one above.</p>
+        <p className="text-sm text-ink-500">No cards yet — add your first one above.</p>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-8">
         {cards.map((card) => (
-          <div key={card.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <div className="flex items-baseline justify-between">
+          <div key={card.id}>
+            {/* Card silhouette banner */}
+            <div className="flex items-center justify-between rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 px-5 py-4">
               <div>
-                <h2 className="text-lg font-semibold">{card.name}</h2>
-                <p className="text-sm text-slate-400">
-                  {card.issuer} · {card.reward_program} · base{" "}
-                  {formatEarnRate(card.reward_type, card.base_earn_rate)}
-                </p>
+                <div className="flex items-center gap-2 font-mono text-xs tracking-[0.15em] text-ink-500 uppercase">
+                  {card.issuer && <span>{card.issuer}</span>}
+                  {card.issuer && card.network && <span className="text-ledger-700">·</span>}
+                  {card.network && <span>{card.network}</span>}
+                </div>
+                <p className="mt-1 font-display text-base font-medium text-ink-100">{card.name}</p>
               </div>
-              {card.terms_url && (
-                <a
-                  href={card.terms_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-indigo-400 hover:underline"
-                >
-                  Terms →
-                </a>
-              )}
+              <div className="text-right">
+                <p className="font-mono text-sm text-foil">
+                  base {formatEarnRate(card.reward_type, card.base_earn_rate)}
+                </p>
+                {card.terms_url && (
+                  <a
+                    href={card.terms_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-xs text-ink-500 hover:text-foil"
+                  >
+                    Terms →
+                  </a>
+                )}
+              </div>
             </div>
 
-            <ul className="mt-3 space-y-2">
-              {card.card_categories.map((c) => (
-                <CategoryRow key={c.id} cat={c} rewardType={card.reward_type} onSaved={load} />
-              ))}
-            </ul>
-            <AddCategoryRow cardId={card.id} onSaved={load} />
-            <PromoSection cardId={card.id} />
+            {/* Ledger entries */}
+            <div className="divide-y divide-ledger-800 border-x border-b border-ledger-800 px-4">
+              <ul className="divide-y divide-ledger-800">
+                {card.card_categories.map((c) => (
+                  <CategoryRow key={c.id} cat={c} rewardType={card.reward_type} onSaved={load} />
+                ))}
+              </ul>
+              <AddCategoryRow cardId={card.id} onSaved={load} />
+              <PromoSection cardId={card.id} />
+            </div>
           </div>
         ))}
       </div>

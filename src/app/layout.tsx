@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  weight: ["500", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const publicSans = Public_Sans({
+  variable: "--font-public-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -26,9 +34,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${spaceGrotesk.variable} ${plexMono.variable} ${publicSans.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+      <body className="min-h-full flex flex-col bg-ledger-950 text-ink-100">
         <Nav />
         <div className="flex-1">{children}</div>
       </body>

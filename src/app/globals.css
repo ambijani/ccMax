@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ledger-950: #0c0f0d;
+  --ledger-900: #151915;
+  --ledger-850: #1a1f1a;
+  --ledger-800: #20251f;
+  --ledger-700: #2c332b;
+  --ink-100: #e7e9e2;
+  --ink-300: #b7bcb1;
+  --ink-500: #8b9085;
+  --foil: #c7a24e;
+  --foil-dim: #8a7240;
+  --signal: #5fc9a8;
+  --alert: #d9685a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ledger-950: var(--ledger-950);
+  --color-ledger-900: var(--ledger-900);
+  --color-ledger-850: var(--ledger-850);
+  --color-ledger-800: var(--ledger-800);
+  --color-ledger-700: var(--ledger-700);
+  --color-ink-100: var(--ink-100);
+  --color-ink-300: var(--ink-300);
+  --color-ink-500: var(--ink-500);
+  --color-foil: var(--foil);
+  --color-foil-dim: var(--foil-dim);
+  --color-signal: var(--signal);
+  --color-alert: var(--alert);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-plex-mono);
+  --font-sans: var(--font-public-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ledger-950);
+  color: var(--ink-100);
+  font-family: var(--font-sans);
+}
+
+/* Underline-style text inputs: the "ledger entry line" treatment. */
+.field-line {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ledger-700);
+  border-radius: 0;
+  padding: 0.5rem 0.125rem;
+  color: var(--ink-100);
+  transition: border-color 0.15s ease;
+}
+.field-line::placeholder {
+  color: var(--ink-500);
+}
+.field-line:focus {
+  outline: none;
+  border-bottom-color: var(--foil);
+}
+
+.tabular {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
 }
