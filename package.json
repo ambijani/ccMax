@@ -2,6 +2,12 @@
   "name": "cc-optimizer",
   "version": "0.1.0",
   "private": true,
+  "description": "Tells you which credit card to use for a purchase, based on your actual cards' bonus categories, caps, and points valuations.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ambijani/ccMax.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
