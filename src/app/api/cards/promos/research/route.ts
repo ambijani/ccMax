@@ -17,7 +17,15 @@ export async function POST(request: Request) {
     .single();
   if (cardError || !card) return NextResponse.json({ error: "Card not found" }, { status: 404 });
 
-  const result = await researchCardPromos(card.name, card.issuer, card.network);
+  let result;
+  try {
+    result = await researchCardPromos(card.name, card.issuer, card.network);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Promo research failed" },
+      { status: 502 },
+    );
+  }
 
   await supabase.from("card_promos").delete().eq("card_id", cardId);
 

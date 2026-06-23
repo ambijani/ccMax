@@ -26,9 +26,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const classification = forcedCategory
-    ? { category: forcedCategory, confidence: "high" as const, ambiguous: false, alternative_categories: [], reasoning: "User-selected category." }
-    : await classifyMerchant(merchantName);
+  let classification;
+  try {
+    classification = forcedCategory
+      ? { category: forcedCategory, confidence: "high" as const, ambiguous: false, alternative_categories: [], reasoning: "User-selected category." }
+      : await classifyMerchant(merchantName);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Classification failed" },
+      { status: 502 },
+    );
+  }
 
   const { data: cards, error: cardsError } = await supabase
     .from("cards")
