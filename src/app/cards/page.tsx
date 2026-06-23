@@ -1,10 +1,183 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import AddCardFlow from "@/components/AddCardFlow";
-import { formatEarnRate } from "@/lib/format";
+import { formatEarnRate, rewardUnit } from "@/lib/format";
 import { REWARD_CATEGORIES } from "@/lib/types";
-import type { CardCategory, CardPromo, CardWithCategories } from "@/lib/types";
+import type { CardCategory, CardPromo, CardWithCategories, RewardType } from "@/lib/types";
+
+function Field({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className={`block font-mono text-xs text-ink-500 ${className ?? ""}`}>
+      <span className="mb-1 block uppercase tracking-wide">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function CardBanner({ card, onSaved }: { card: CardWithCategories; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(card.name);
+  const [issuer, setIssuer] = useState(card.issuer);
+  const [network, setNetwork] = useState(card.network);
+  const [rewardType, setRewardType] = useState<RewardType>(card.reward_type);
+  const [rewardProgram, setRewardProgram] = useState(card.reward_program);
+  const [baseEarnRate, setBaseEarnRate] = useState(card.base_earn_rate);
+  const [termsUrl, setTermsUrl] = useState(card.terms_url ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    try {
+      await fetch("/api/cards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: card.id,
+          name,
+          issuer,
+          network,
+          rewardType,
+          rewardProgram,
+          baseEarnRate,
+          termsUrl: termsUrl || null,
+        }),
+      });
+      setEditing(false);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2 font-mono text-xs tracking-[0.15em] text-ink-500 uppercase">
+            {card.issuer && <span>{card.issuer}</span>}
+            {card.issuer && card.network && <span className="text-ledger-700">·</span>}
+            {card.network && <span>{card.network}</span>}
+          </div>
+          <p className="mt-1 font-display text-base font-medium text-ink-100">{card.name}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-sm text-foil">
+            base {formatEarnRate(card.reward_type, card.base_earn_rate)}
+          </p>
+          <div className="mt-1 flex items-center justify-end gap-3">
+            {card.terms_url && (
+              <a
+                href={card.terms_url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-xs text-ink-500 hover:text-foil"
+              >
+                Terms →
+              </a>
+            )}
+            <button
+              onClick={() => setEditing(true)}
+              className="font-mono text-xs text-ink-500 hover:text-foil"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[10px] border border-ledger-700 bg-ledger-900 p-5">
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Card name">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="field-line w-full text-sm"
+          />
+        </Field>
+        <Field label="Issuer">
+          <input
+            value={issuer}
+            onChange={(e) => setIssuer(e.target.value)}
+            className="field-line w-full text-sm"
+          />
+        </Field>
+        <Field label="Network">
+          <input
+            value={network}
+            onChange={(e) => setNetwork(e.target.value)}
+            placeholder="Visa, Mastercard, Amex..."
+            className="field-line w-full text-sm"
+          />
+        </Field>
+        <Field label="Reward type">
+          <select
+            value={rewardType}
+            onChange={(e) => setRewardType(e.target.value as RewardType)}
+            className="w-full border border-ledger-700 bg-ledger-900 px-2 py-1.5 text-sm text-ink-100"
+          >
+            <option value="cash_back">Cash back</option>
+            <option value="points">Points</option>
+            <option value="miles">Miles</option>
+          </select>
+        </Field>
+        <Field label="Reward program">
+          <input
+            value={rewardProgram}
+            onChange={(e) => setRewardProgram(e.target.value)}
+            placeholder='e.g. "Capital One Miles"'
+            className="field-line w-full text-sm"
+          />
+        </Field>
+        <Field label="Base earn rate (non-bonus purchases)">
+          <input
+            type="number"
+            step="0.1"
+            value={baseEarnRate}
+            onChange={(e) => setBaseEarnRate(parseFloat(e.target.value) || 0)}
+            className="field-line tabular w-full text-sm"
+          />
+          <span className="mt-1 block text-[11px] normal-case text-ink-500">
+            {rewardType === "cash_back" ? "% cash back" : `× ${rewardUnit(rewardType)} per $1`}
+          </span>
+        </Field>
+        <Field label="Terms URL" className="col-span-2">
+          <input
+            value={termsUrl}
+            onChange={(e) => setTermsUrl(e.target.value)}
+            className="field-line w-full text-sm"
+          />
+        </Field>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="bg-signal px-3 py-1.5 font-mono text-xs font-medium text-ledger-950 hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+        <button
+          onClick={() => setEditing(false)}
+          className="border border-ledger-700 px-3 py-1.5 font-mono text-xs text-ink-300 hover:bg-ledger-800"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function formatPromoValue(promo: CardPromo) {
   if (promo.value_cents) return `$${(promo.value_cents / 100).toFixed(0)} off`;
@@ -508,32 +681,7 @@ export default function CardsPage() {
       <div className="space-y-8">
         {cards.map((card) => (
           <div key={card.id}>
-            {/* Card silhouette banner */}
-            <div className="flex items-center justify-between rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 px-5 py-4">
-              <div>
-                <div className="flex items-center gap-2 font-mono text-xs tracking-[0.15em] text-ink-500 uppercase">
-                  {card.issuer && <span>{card.issuer}</span>}
-                  {card.issuer && card.network && <span className="text-ledger-700">·</span>}
-                  {card.network && <span>{card.network}</span>}
-                </div>
-                <p className="mt-1 font-display text-base font-medium text-ink-100">{card.name}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-mono text-sm text-foil">
-                  base {formatEarnRate(card.reward_type, card.base_earn_rate)}
-                </p>
-                {card.terms_url && (
-                  <a
-                    href={card.terms_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-xs text-ink-500 hover:text-foil"
-                  >
-                    Terms →
-                  </a>
-                )}
-              </div>
-            </div>
+            <CardBanner card={card} onSaved={load} />
 
             {/* Ledger entries */}
             <div className="divide-y divide-ledger-800 border-x border-b border-ledger-800 px-4">

@@ -109,6 +109,8 @@ export interface RankedCardResult {
   dollar_value_cents: number;
   cpp_used: number | null;
   cpp_source: "override" | "community" | "default" | null;
+  conservative_dollar_value_cents: number | null;
+  community_dollar_value_cents: number | null;
   cap_status: "ok" | "warning" | "hit" | "none";
   cap_percent_used: number | null;
   excluded: boolean;

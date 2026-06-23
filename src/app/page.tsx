@@ -33,6 +33,7 @@ function formatCents(cents: number) {
 }
 
 export default function Home() {
+  const [store, setStore] = useState("");
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export default function Home() {
   const [logging, setLogging] = useState(false);
   const [cards, setCards] = useState<CardWithCategories[] | null>(null);
   const [showCalc, setShowCalc] = useState(false);
+  const [applyingValuation, setApplyingValuation] = useState(false);
 
   useEffect(() => {
     fetch("/api/cards")
@@ -51,6 +53,10 @@ export default function Home() {
       .then(setCards)
       .catch(() => setCards([]));
   }, []);
+
+  function merchantName() {
+    return store ? `${store} - ${merchant}` : merchant;
+  }
 
   async function lookup(category?: string) {
     setLoading(true);
@@ -60,7 +66,7 @@ export default function Home() {
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merchantName: merchant, amountCents, category }),
+        body: JSON.stringify({ merchantName: merchantName(), amountCents, category }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Lookup failed");
@@ -75,6 +81,20 @@ export default function Home() {
     }
   }
 
+  async function applyValuation(rewardProgram: string, cppOverride: number) {
+    setApplyingValuation(true);
+    try {
+      await fetch("/api/overrides", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rewardProgram, cppOverride }),
+      });
+      await lookup(overrideCategory ?? undefined);
+    } finally {
+      setApplyingValuation(false);
+    }
+  }
+
   async function logPurchase() {
     if (!result?.ranked[0]) return;
     setLogging(true);
@@ -84,7 +104,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          merchantName: merchant,
+          merchantName: merchantName(),
           category: overrideCategory ?? result.classification.category,
           amountCents,
           cardId: result.ranked[0].card.id,
@@ -138,42 +158,57 @@ export default function Home() {
           setOverrideCategory(null);
           lookup();
         }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+        className="flex flex-col gap-4"
       >
-        <div className="flex-1">
-          <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
-            Item or merchant
-          </label>
-          <input
-            value={merchant}
-            onChange={(e) => setMerchant(e.target.value)}
-            placeholder="Costco, plane ticket, groceries..."
-            required
-            className="field-line w-full text-sm"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="sm:w-56">
+            <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
+              Where (optional)
+            </label>
+            <input
+              value={store}
+              onChange={(e) => setStore(e.target.value)}
+              placeholder="Costco, Amazon, Target..."
+              className="field-line w-full text-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
+              Item or what you&apos;re buying
+            </label>
+            <input
+              value={merchant}
+              onChange={(e) => setMerchant(e.target.value)}
+              placeholder="Ninja Crispi, plane ticket, groceries..."
+              required
+              className="field-line w-full text-sm"
+            />
+          </div>
         </div>
-        <div className="sm:w-32">
-          <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
-            Amount
-          </label>
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            className="field-line tabular w-full text-sm"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="sm:w-32">
+            <label className="mb-1 block font-mono text-xs tracking-wide text-ink-500 uppercase">
+              Amount
+            </label>
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              className="field-line tabular w-full text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-foil px-4 py-2 text-sm font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
+          >
+            {loading ? "Thinking..." : "Find my card"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-foil px-4 py-2 text-sm font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
-        >
-          {loading ? "Thinking..." : "Find my card"}
-        </button>
       </form>
 
       {error && (
@@ -325,6 +360,39 @@ export default function Home() {
                         conservative 1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
                         Set a custom valuation in Settings for a more accurate estimate.
                       </p>
+                    )}
+                    {topValuation && top.conservative_dollar_value_cents !== null && top.community_dollar_value_cents !== null && (
+                      <div className="mt-2 border-t border-ledger-800 pt-2">
+                        <p className="mb-1.5 normal-case text-ink-300">
+                          That number depends on how you redeem. Pick which to use for{" "}
+                          {top.card.reward_program}:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => applyValuation(top.card.reward_program, topValuation.cpp_conservative ?? 1)}
+                            disabled={applyingValuation}
+                            className={`border px-2 py-1 normal-case disabled:opacity-50 ${
+                              top.cpp_source === "override" && top.cpp_used === topValuation.cpp_conservative
+                                ? "border-signal text-signal"
+                                : "border-ledger-700 text-ink-300 hover:bg-ledger-800"
+                            }`}
+                          >
+                            Guaranteed: {formatCents(top.conservative_dollar_value_cents)} ({topValuation.cpp_conservative}¢)
+                          </button>
+                          <button
+                            onClick={() => applyValuation(top.card.reward_program, topValuation.cpp_community ?? 1)}
+                            disabled={applyingValuation}
+                            className={`border px-2 py-1 normal-case disabled:opacity-50 ${
+                              top.cpp_source === "override" && top.cpp_used === topValuation.cpp_community
+                                ? "border-signal text-signal"
+                                : "border-ledger-700 text-ink-300 hover:bg-ledger-800"
+                            }`}
+                          >
+                            If I optimize redemptions: {formatCents(top.community_dollar_value_cents)} (
+                            {topValuation.cpp_community}¢)
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

@@ -43,17 +43,23 @@ export function rankCardsForPurchase(
     let pointsEarned: number;
     let cppUsed: number | null = null;
     let cppSource: RankedCardResult["cpp_source"] = null;
+    let conservativeDollarValueCents: number | null = null;
+    let communityDollarValueCents: number | null = null;
 
     if (card.reward_type === "cash_back") {
       pointsEarned = 0;
       dollarValueCents = Math.round(amountDollars * earnRate);
     } else {
       pointsEarned = amountDollars * earnRate;
+      const valuation = valuationsByProgram[card.reward_program];
       const override = cppOverridesByProgram[card.reward_program];
-      const community = valuationsByProgram[card.reward_program]?.cpp_community;
+      const community = valuation?.cpp_community;
+      const conservative = valuation?.cpp_conservative;
       cppUsed = override ?? community ?? 1;
       cppSource = override !== undefined ? "override" : community !== undefined ? "community" : "default";
       dollarValueCents = Math.round(pointsEarned * (cppUsed / 100) * 100);
+      conservativeDollarValueCents = Math.round(pointsEarned * ((conservative ?? 1) / 100) * 100);
+      communityDollarValueCents = Math.round(pointsEarned * ((community ?? 1) / 100) * 100);
     }
 
     return {
@@ -64,6 +70,8 @@ export function rankCardsForPurchase(
       dollar_value_cents: dollarValueCents,
       cpp_used: cppUsed,
       cpp_source: cppSource,
+      conservative_dollar_value_cents: conservativeDollarValueCents,
+      community_dollar_value_cents: communityDollarValueCents,
       cap_status: capStatus,
       cap_percent_used: capPercentUsed,
       excluded,
