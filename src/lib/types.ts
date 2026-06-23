@@ -22,6 +22,9 @@ export interface CardCategory {
   cap_amount_cents: number | null;
   cap_period: CapPeriod | null;
   cap_spent_cents: number;
+  cap_period_start: string;
+  is_rotating: boolean;
+  needs_review: boolean;
   source_text: string | null;
   source_url: string | null;
   created_at: string;

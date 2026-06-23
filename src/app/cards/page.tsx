@@ -26,8 +26,19 @@ function PromoSection({ cardId }: { cardId: string }) {
   }, [cardId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    fetch(`/api/cards/promos?cardId=${cardId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active) {
+          setPromos(data);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [cardId]);
 
   async function research() {
     setResearching(true);
@@ -148,11 +159,14 @@ function CategoryRow({
     cat.cap_amount_cents !== null ? String(cat.cap_amount_cents / 100) : "",
   );
   const [capPeriod, setCapPeriod] = useState(cat.cap_period ?? "");
+  const [isRotating, setIsRotating] = useState(cat.is_rotating);
   const [sourceText, setSourceText] = useState(cat.source_text ?? "");
   const [sourceUrl, setSourceUrl] = useState(cat.source_url ?? "");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const pct = capPercent(cat);
+  const needsQuarterlyUpdate = cat.is_rotating && cat.needs_review;
 
   async function save() {
     setSaving(true);
@@ -166,6 +180,7 @@ function CategoryRow({
           earnRate,
           capAmountCents: capDollars ? Math.round(parseFloat(capDollars) * 100) : null,
           capPeriod: capPeriod || null,
+          isRotating,
           sourceText: sourceText || null,
           sourceUrl: sourceUrl || null,
         }),
@@ -187,11 +202,32 @@ function CategoryRow({
     onSaved();
   }
 
+  async function acknowledgeReview() {
+    setResetting(true);
+    try {
+      await fetch("/api/cards/reset-cap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryId: cat.id }),
+      });
+      onSaved();
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (!editing) {
     return (
       <li className="py-3 text-sm">
         <div className="flex items-center justify-between">
-          <span className="text-ink-100">{cat.category}</span>
+          <span className="flex items-center gap-2 text-ink-100">
+            {cat.category}
+            {cat.is_rotating && (
+              <span className="border border-foil/40 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-foil uppercase">
+                Rotating
+              </span>
+            )}
+          </span>
           <div className="flex items-center gap-3">
             <span className="font-mono text-ink-300">{formatEarnRate(rewardType, cat.earn_rate)}</span>
             <button
@@ -202,6 +238,21 @@ function CategoryRow({
             </button>
           </div>
         </div>
+        {needsQuarterlyUpdate && (
+          <div className="mt-2 border border-alert/40 bg-alert/10 px-3 py-2 text-xs text-alert">
+            <p>
+              New quarter started — the cap was reset automatically, but make sure to update this
+              category to whatever&apos;s bonused now. Hit Edit above to change it, then dismiss.
+            </p>
+            <button
+              onClick={acknowledgeReview}
+              disabled={resetting}
+              className="mt-1.5 border border-alert/40 px-2 py-1 font-mono text-[11px] uppercase hover:bg-alert/10 disabled:opacity-50"
+            >
+              {resetting ? "Dismissing..." : "Dismiss — I've updated it"}
+            </button>
+          </div>
+        )}
         {pct !== null && (
           <div className="mt-2">
             <div className="h-1 w-full bg-ledger-800">
@@ -279,6 +330,14 @@ function CategoryRow({
           <option value="quarterly">Quarterly</option>
           <option value="annual">Annual</option>
         </select>
+        <label className="flex items-center gap-1.5 font-mono text-xs text-ink-500">
+          <input
+            type="checkbox"
+            checked={isRotating}
+            onChange={(e) => setIsRotating(e.target.checked)}
+          />
+          Rotating (changes each quarter)
+        </label>
       </div>
       <textarea
         value={sourceText}
@@ -322,6 +381,7 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
   const [adding, setAdding] = useState(false);
   const [category, setCategory] = useState<string>(REWARD_CATEGORIES[0]);
   const [earnRate, setEarnRate] = useState(1);
+  const [isRotating, setIsRotating] = useState(false);
   const [saving, setSaving] = useState(false);
 
   if (!adding) {
@@ -343,7 +403,13 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
       await fetch("/api/cards/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId, category, earnRate }),
+        body: JSON.stringify({
+          cardId,
+          category,
+          earnRate,
+          capPeriod: isRotating ? "quarterly" : null,
+          isRotating,
+        }),
       });
       setAdding(false);
       onSaved();
@@ -372,6 +438,14 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
         onChange={(e) => setEarnRate(parseFloat(e.target.value) || 0)}
         className="field-line tabular w-16 text-xs"
       />
+      <label className="flex items-center gap-1.5 font-mono text-xs text-ink-500">
+        <input
+          type="checkbox"
+          checked={isRotating}
+          onChange={(e) => setIsRotating(e.target.checked)}
+        />
+        Rotating
+      </label>
       <button
         onClick={save}
         disabled={saving}
@@ -401,8 +475,19 @@ export default function CardsPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    fetch("/api/cards")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active) {
+          setCards(data);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">

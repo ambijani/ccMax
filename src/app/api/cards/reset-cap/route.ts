@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
   const { error } = await supabase
     .from("card_categories")
-    .update({ cap_spent_cents: 0, cap_period_start: new Date().toISOString() })
+    .update({ cap_spent_cents: 0, cap_period_start: new Date().toISOString(), needs_review: false })
     .eq("id", categoryId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

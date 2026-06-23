@@ -49,7 +49,12 @@ export async function POST(request: Request) {
       .from("card_categories")
       .update({
         cap_spent_cents: newSpent,
-        ...(expired ? { cap_period_start: new Date().toISOString() } : {}),
+        ...(expired
+          ? {
+              cap_period_start: new Date().toISOString(),
+              ...(matched.is_rotating ? { needs_review: true } : {}),
+            }
+          : {}),
       })
       .eq("id", matched.id);
 

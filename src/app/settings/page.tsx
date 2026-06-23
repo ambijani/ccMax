@@ -35,8 +35,34 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    (async () => {
+      const [cardsRes, overridesRes] = await Promise.all([
+        fetch("/api/cards"),
+        fetch("/api/overrides"),
+      ]);
+      const cardsData: CardWithCategories[] = cardsRes.ok ? await cardsRes.json() : [];
+      const overridesData: UserCppOverride[] = overridesRes.ok ? await overridesRes.json() : [];
+      if (!active) return;
+      setCards(cardsData);
+      setOverrides(
+        Object.fromEntries(overridesData.map((o) => [o.reward_program, o.cpp_override])),
+      );
+
+      const programs = [...new Set(cardsData.map((c) => c.reward_program))];
+      if (programs.length) {
+        const valRes = await fetch(`/api/valuations?programs=${encodeURIComponent(programs.join(","))}`);
+        if (valRes.ok && active) {
+          const vals: PointsValuation[] = await valRes.json();
+          setValuations(Object.fromEntries(vals.map((v) => [v.reward_program, v])));
+        }
+      }
+      if (active) setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function saveOverride(rewardProgram: string) {
     const value = parseFloat(draftValues[rewardProgram]);
@@ -149,28 +175,47 @@ export default function SettingsPage() {
 
       <section>
         <h2 className="mb-1 font-display text-lg font-medium text-ink-100">Spending caps</h2>
-        <p className="mb-4 text-sm text-ink-500">Manually reset a category&apos;s tracked spend.</p>
+        <p className="mb-4 text-sm text-ink-500">
+          Caps reset automatically once a quarter/year rolls over. Reset one manually here if needed.
+        </p>
         {cappedCategories.length === 0 && (
           <p className="text-sm text-ink-500">No capped categories yet.</p>
         )}
         <div className="divide-y divide-ledger-800 border-y border-ledger-800">
-          {cappedCategories.map(({ card, cat }) => (
-            <div key={cat.id} className="flex items-center justify-between py-3 text-sm">
-              <span className="text-ink-300">
-                {card.name} · {cat.category} —{" "}
-                <span className="font-mono">
-                  ${(cat.cap_spent_cents / 100).toFixed(0)} / $
-                  {((cat.cap_amount_cents ?? 0) / 100).toFixed(0)} ({cat.cap_period})
-                </span>
-              </span>
-              <button
-                onClick={() => resetCap(cat.id)}
-                className="border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-300 hover:bg-ledger-800"
-              >
-                Reset
-              </button>
-            </div>
-          ))}
+          {cappedCategories.map(({ card, cat }) => {
+            const needsUpdate = cat.is_rotating && cat.needs_review;
+            return (
+              <div key={cat.id} className="py-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-ink-300">
+                    {card.name} · {cat.category}
+                    {cat.is_rotating && (
+                      <span className="ml-2 border border-foil/40 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-foil uppercase">
+                        Rotating
+                      </span>
+                    )}
+                    {" — "}
+                    <span className="font-mono">
+                      ${(cat.cap_spent_cents / 100).toFixed(0)} / $
+                      {((cat.cap_amount_cents ?? 0) / 100).toFixed(0)} ({cat.cap_period})
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => resetCap(cat.id)}
+                    className="border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-300 hover:bg-ledger-800"
+                  >
+                    {needsUpdate ? "Dismiss" : "Reset"}
+                  </button>
+                </div>
+                {needsUpdate && (
+                  <p className="mt-1 font-mono text-xs text-alert">
+                    New quarter started — the cap reset automatically. Update this category on{" "}
+                    {card.name} to whatever&apos;s bonused now.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     </main>

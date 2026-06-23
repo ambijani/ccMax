@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { cardId, category, earnRate, capAmountCents, capPeriod, sourceText, sourceUrl } = body;
+  const { cardId, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl } = body;
   if (!cardId || !category || typeof earnRate !== "number") {
     return NextResponse.json(
       { error: "cardId, category, and earnRate are required" },
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       earn_rate: earnRate,
       cap_amount_cents: capAmountCents ?? null,
       cap_period: capPeriod ?? null,
+      is_rotating: isRotating ?? false,
       source_text: sourceText ?? null,
       source_url: sourceUrl ?? null,
     })
@@ -39,14 +40,15 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, category, earnRate, capAmountCents, capPeriod, sourceText, sourceUrl } = body;
+  const { id, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const update: Record<string, unknown> = {};
+  const update: Record<string, unknown> = { needs_review: false };
   if (category !== undefined) update.category = category;
   if (earnRate !== undefined) update.earn_rate = earnRate;
   if (capAmountCents !== undefined) update.cap_amount_cents = capAmountCents;
   if (capPeriod !== undefined) update.cap_period = capPeriod;
+  if (isRotating !== undefined) update.is_rotating = isRotating;
   if (sourceText !== undefined) update.source_text = sourceText;
   if (sourceUrl !== undefined) update.source_url = sourceUrl;
 

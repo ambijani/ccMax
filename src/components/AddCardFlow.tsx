@@ -28,6 +28,7 @@ function emptyCategory(): CardIngestionCategory {
     earn_rate: 1,
     cap_amount_cents: null,
     cap_period: null,
+    is_rotating: false,
     source_text: "",
     source_url: null,
   };
@@ -295,6 +296,14 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                     <option value="quarterly">Quarterly</option>
                     <option value="annual">Annual</option>
                   </select>
+                  <label className="flex items-center gap-1.5 font-mono text-xs text-ink-500">
+                    <input
+                      type="checkbox"
+                      checked={c.is_rotating}
+                      onChange={(e) => updateCategory(i, { is_rotating: e.target.checked })}
+                    />
+                    Rotating (changes each quarter)
+                  </label>
                 </div>
                 <textarea
                   value={c.source_text ?? ""}

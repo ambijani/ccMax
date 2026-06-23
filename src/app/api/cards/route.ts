@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isCapPeriodExpired } from "@/lib/capPeriod";
 import type { CardIngestionResult } from "@/lib/ai/cardIngestion";
+import type { CardCategory, CardWithCategories } from "@/lib/types";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +15,31 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+
+  const cards = data as CardWithCategories[];
+  const now = new Date();
+  const expired: CardCategory[] = cards
+    .flatMap((card) => card.card_categories)
+    .filter((cat) => cat.cap_period && isCapPeriodExpired(cat.cap_period_start, cat.cap_period, now));
+
+  await Promise.all(
+    expired.map((cat) => {
+      const periodStart = now.toISOString();
+      cat.cap_spent_cents = 0;
+      cat.cap_period_start = periodStart;
+      if (cat.is_rotating) cat.needs_review = true;
+      return supabase
+        .from("card_categories")
+        .update({
+          cap_spent_cents: 0,
+          cap_period_start: periodStart,
+          ...(cat.is_rotating ? { needs_review: true } : {}),
+        })
+        .eq("id", cat.id);
+    }),
+  );
+
+  return NextResponse.json(cards);
 }
 
 export async function POST(request: Request) {
@@ -48,6 +74,7 @@ export async function POST(request: Request) {
         earn_rate: c.earn_rate,
         cap_amount_cents: c.cap_amount_cents,
         cap_period: c.cap_period,
+        is_rotating: c.is_rotating ?? false,
         source_text: c.source_text,
         source_url: c.source_url,
       })),
