@@ -82,7 +82,7 @@ export interface Purchase {
 }
 
 export const REWARD_CATEGORIES = [
-  "Dining",
+  "Dining/Restaurants",
   "Travel",
   "Grocery",
   "Wholesale",
@@ -91,6 +91,7 @@ export const REWARD_CATEGORIES = [
   "Pharmacy",
   "Online Shopping",
   "Entertainment",
+  "Home Improvement",
   "General",
 ] as const;
 
