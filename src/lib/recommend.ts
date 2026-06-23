@@ -55,8 +55,8 @@ export function rankCardsForPurchase(
       const override = cppOverridesByProgram[card.reward_program];
       const community = valuation?.cpp_community;
       const conservative = valuation?.cpp_conservative;
-      cppUsed = override ?? community ?? 1;
-      cppSource = override !== undefined ? "override" : community !== undefined ? "community" : "default";
+      cppUsed = override ?? conservative ?? 1;
+      cppSource = override !== undefined ? "override" : conservative !== undefined ? "conservative" : "default";
       dollarValueCents = Math.round(pointsEarned * (cppUsed / 100) * 100);
       conservativeDollarValueCents = Math.round(pointsEarned * ((conservative ?? 1) / 100) * 100);
       communityDollarValueCents = Math.round(pointsEarned * ((community ?? 1) / 100) * 100);
@@ -81,6 +81,11 @@ export function rankCardsForPurchase(
 
   return results.sort((a, b) => {
     if (a.excluded !== b.excluded) return a.excluded ? 1 : -1;
-    return b.dollar_value_cents - a.dollar_value_cents;
+    if (a.dollar_value_cents !== b.dollar_value_cents) return b.dollar_value_cents - a.dollar_value_cents;
+    // Tie-breaker: prefer a card with an actual matched bonus category over
+    // one merely falling back to its generic base rate.
+    const aMatched = a.matched_category ? 1 : 0;
+    const bMatched = b.matched_category ? 1 : 0;
+    return bMatched - aMatched;
   });
 }

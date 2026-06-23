@@ -121,7 +121,9 @@ export default function Home() {
 
   const top = result?.ranked[0];
   const runnerUps = result?.ranked.slice(1) ?? [];
+  const bestAlt = runnerUps.find((r) => !r.excluded) ?? null;
   const topValuation = top ? result?.valuations[top.card.reward_program] : undefined;
+  const topCategory = overrideCategory ?? result?.classification.category ?? "";
 
   if (cards === null) {
     return (
@@ -309,6 +311,70 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Why this card — purchase-specific decision summary */}
+          <div className="mt-5 border-l-2 border-foil/40 bg-ledger-900 px-4 py-3 text-sm">
+            <p className="mb-1.5 font-mono text-xs tracking-wide text-ink-500 uppercase">Why this card</p>
+            <div className="space-y-1.5 text-ink-300">
+              <p>
+                {top.matched_category ? (
+                  <>
+                    <strong className="text-ink-100">{topCategory}</strong> is a bonus category on{" "}
+                    {top.card.name} — {formatEarnRate(top.card.reward_type, top.matched_category.earn_rate)}{" "}
+                    instead of its {formatEarnRate(top.card.reward_type, top.card.base_earn_rate)} base rate.
+                  </>
+                ) : (
+                  <>
+                    None of your cards have a bonus for{" "}
+                    <strong className="text-ink-100">{topCategory}</strong>, so this uses {top.card.name}
+                    &apos;s base rate of {formatEarnRate(top.card.reward_type, top.card.base_earn_rate)}.
+                  </>
+                )}
+              </p>
+              {bestAlt && (
+                <p>
+                  {top.dollar_value_cents > bestAlt.dollar_value_cents ? (
+                    <>
+                      Worth {formatCents(top.dollar_value_cents)} — beats the next best option,{" "}
+                      {bestAlt.card.name}, at {formatCents(bestAlt.dollar_value_cents)}.
+                    </>
+                  ) : (
+                    <>
+                      Ties with {bestAlt.card.name} at {formatCents(bestAlt.dollar_value_cents)}
+                      {top.matched_category && !bestAlt.matched_category
+                        ? ` — picked first since it has an explicit bonus for this purchase and ${bestAlt.card.name} doesn't.`
+                        : "."}
+                    </>
+                  )}
+                </p>
+              )}
+              {top.card.reward_type !== "cash_back" && (
+                <p>
+                  That assumes the <strong className="text-ink-100">guaranteed</strong> redemption value (
+                  {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")}) — open
+                  the calculation below to compare against an optimized-redemption estimate.
+                </p>
+              )}
+              {top.matched_category?.source_text && (
+                <p className="border-l-2 border-ledger-700 pl-3 text-xs italic text-ink-500">
+                  &ldquo;{top.matched_category.source_text}&rdquo;
+                  {top.matched_category.source_url && (
+                    <>
+                      {" "}
+                      <a
+                        href={top.matched_category.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono not-italic text-foil hover:underline"
+                      >
+                        Source →
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Ledger entries — supporting detail */}
           <div className="mt-5 divide-y divide-ledger-800 border-y border-ledger-800">
             <div className="flex items-center justify-between py-3">
@@ -348,17 +414,16 @@ export default function Home() {
                       {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} (
                       {top.cpp_source === "override"
                         ? "your custom valuation"
-                        : top.cpp_source === "community"
-                          ? "community valuation"
+                        : top.cpp_source === "conservative"
+                          ? "guaranteed/conservative valuation"
                           : "default — no valuation researched yet"}
                       ) = <span className="text-ink-100">{formatCents(top.dollar_value_cents)}</span>{" "}
                       estimated value
                     </p>
                     {top.cpp_source === "default" && (
                       <p className="text-alert">
-                        No community valuation found for {top.card.reward_program} yet — using a
-                        conservative 1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
-                        Set a custom valuation in Settings for a more accurate estimate.
+                        No valuation researched yet for {top.card.reward_program} — using a flat
+                        1¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} default.
                       </p>
                     )}
                     {topValuation && top.conservative_dollar_value_cents !== null && top.community_dollar_value_cents !== null && (
@@ -372,7 +437,8 @@ export default function Home() {
                             onClick={() => applyValuation(top.card.reward_program, topValuation.cpp_conservative ?? 1)}
                             disabled={applyingValuation}
                             className={`border px-2 py-1 normal-case disabled:opacity-50 ${
-                              top.cpp_source === "override" && top.cpp_used === topValuation.cpp_conservative
+                              top.cpp_source === "conservative" ||
+                              (top.cpp_source === "override" && top.cpp_used === topValuation.cpp_conservative)
                                 ? "border-signal text-signal"
                                 : "border-ledger-700 text-ink-300 hover:bg-ledger-800"
                             }`}
@@ -392,6 +458,22 @@ export default function Home() {
                             {topValuation.cpp_community}¢)
                           </button>
                         </div>
+                        <p className="mt-2 normal-case text-ink-500">{topValuation.valuation_notes}</p>
+                        {topValuation.sources?.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-3">
+                            {topValuation.sources.slice(0, 3).map((s) => (
+                              <a
+                                key={s.url}
+                                href={s.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-foil hover:underline"
+                              >
+                                {s.title}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -417,51 +499,6 @@ export default function Home() {
                   <p className="mt-1.5 font-mono text-xs text-alert">
                     Approaching the cap for this category — consider a backup card soon.
                   </p>
-                )}
-              </div>
-            )}
-
-            {top.matched_category?.source_text && (
-              <div className="py-3">
-                <p className="mb-1 font-mono text-xs tracking-wide text-ink-500 uppercase">
-                  Why this card
-                </p>
-                <p className="text-sm text-ink-300 italic">
-                  &ldquo;{top.matched_category.source_text}&rdquo;
-                </p>
-                {top.matched_category.source_url && (
-                  <a
-                    href={top.matched_category.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block font-mono text-xs text-foil hover:underline"
-                  >
-                    View official terms →
-                  </a>
-                )}
-              </div>
-            )}
-
-            {topValuation && (
-              <div className="py-3">
-                <p className="mb-1 font-mono text-xs tracking-wide text-ink-500 uppercase">
-                  Community take
-                </p>
-                <p className="text-sm text-ink-300">{topValuation.valuation_notes}</p>
-                {topValuation.sources?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-3">
-                    {topValuation.sources.slice(0, 3).map((s) => (
-                      <a
-                        key={s.url}
-                        href={s.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-xs text-foil hover:underline"
-                      >
-                        {s.title}
-                      </a>
-                    ))}
-                  </div>
                 )}
               </div>
             )}

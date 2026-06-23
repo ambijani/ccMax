@@ -108,7 +108,7 @@ export interface RankedCardResult {
   points_earned: number;
   dollar_value_cents: number;
   cpp_used: number | null;
-  cpp_source: "override" | "community" | "default" | null;
+  cpp_source: "override" | "conservative" | "default" | null;
   conservative_dollar_value_cents: number | null;
   community_dollar_value_cents: number | null;
   cap_status: "ok" | "warning" | "hit" | "none";
