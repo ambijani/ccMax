@@ -107,6 +107,7 @@ export async function PATCH(request: Request) {
     .from("cards")
     .update(update)
     .eq("id", id)
+    .eq("user_id", user.id)
     .select()
     .single();
 

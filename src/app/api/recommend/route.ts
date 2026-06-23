@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { classifyMerchant } from "@/lib/ai/classifyMerchant";
 import { rankCardsForPurchase } from "@/lib/recommend";
 import type { CardPromo, CardWithCategories, PointsValuation, UserCppOverride } from "@/lib/types";
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(supabase, user.id, "recommend", { limit: 30, windowSeconds: 60 });
+  if (!allowed) return NextResponse.json({ error: "Too many requests — slow down." }, { status: 429 });
 
   const { merchantName, amountCents, category: forcedCategory } = await request.json();
   if (!merchantName || !amountCents) {

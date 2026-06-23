@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { researchPointsValuation } from "@/lib/ai/valuationResearch";
 
 export async function POST(request: Request) {
@@ -10,6 +11,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(supabase, user.id, "valuations/research", { limit: 10, windowSeconds: 60 });
+  if (!allowed) return NextResponse.json({ error: "Too many requests — slow down." }, { status: 429 });
 
   const { rewardProgram } = await request.json();
   if (!rewardProgram || typeof rewardProgram !== "string") {

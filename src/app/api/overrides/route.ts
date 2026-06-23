@@ -46,7 +46,8 @@ export async function DELETE(request: Request) {
   const { error } = await supabase
     .from("user_cpp_overrides")
     .delete()
-    .eq("reward_program", rewardProgram);
+    .eq("reward_program", rewardProgram)
+    .eq("user_id", user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

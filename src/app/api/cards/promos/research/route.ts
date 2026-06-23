@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { researchCardPromos } from "@/lib/ai/promoResearch";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const allowed = await checkRateLimit(supabase, user.id, "cards/promos/research", { limit: 10, windowSeconds: 60 });
+  if (!allowed) return NextResponse.json({ error: "Too many requests — slow down." }, { status: 429 });
 
   const { cardId } = await request.json();
   if (!cardId) return NextResponse.json({ error: "cardId is required" }, { status: 400 });
@@ -14,6 +18,7 @@ export async function POST(request: Request) {
     .from("cards")
     .select("*")
     .eq("id", cardId)
+    .eq("user_id", user.id)
     .single();
   if (cardError || !card) return NextResponse.json({ error: "Card not found" }, { status: 404 });
 
