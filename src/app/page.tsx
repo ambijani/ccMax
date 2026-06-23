@@ -122,6 +122,10 @@ export default function Home() {
   const top = result?.ranked[0];
   const runnerUps = result?.ranked.slice(1) ?? [];
   const bestAlt = runnerUps.find((r) => !r.excluded) ?? null;
+  const bestCashBack =
+    result?.ranked.find((r) => !r.excluded && r.card.reward_type === "cash_back") ?? null;
+  const bestPoints =
+    result?.ranked.find((r) => !r.excluded && r.card.reward_type !== "cash_back") ?? null;
   const topValuation = top ? result?.valuations[top.card.reward_program] : undefined;
   const topCategory = overrideCategory ?? result?.classification.category ?? "";
 
@@ -374,6 +378,49 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          {/* Cash back vs. points — secondary comparison, since the two aren't
+              directly comparable (points carry redemption risk/effort that
+              cash back doesn't), and the top pick may not match what someone
+              who doesn't want points would choose. */}
+          {bestCashBack && bestPoints && bestCashBack.card.id !== bestPoints.card.id && (
+            <div className="mt-5 border border-ledger-800">
+              <p className="border-b border-ledger-800 bg-ledger-900 px-4 py-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
+                Cash back vs. points
+              </p>
+              <div className="grid grid-cols-2 divide-x divide-ledger-800">
+                <div className="px-4 py-3">
+                  <div className="mb-1 flex items-center gap-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
+                    <span>Most cash back</span>
+                    {top.card.id === bestCashBack.card.id && (
+                      <span className="border border-foil/40 px-1.5 py-0.5 text-foil">Picked</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-ink-100">{bestCashBack.card.name}</p>
+                  <p className="font-mono text-lg text-ink-100">{formatCents(bestCashBack.dollar_value_cents)}</p>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="mb-1 flex items-center gap-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
+                    <span>Most points/miles</span>
+                    {top.card.id === bestPoints.card.id && (
+                      <span className="border border-foil/40 px-1.5 py-0.5 text-foil">Picked</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-ink-100">{bestPoints.card.name}</p>
+                  <p className="font-mono text-lg text-ink-100">
+                    {Math.round(bestPoints.points_earned).toLocaleString()} {rewardUnit(bestPoints.card.reward_type)}
+                  </p>
+                  <p className="font-mono text-xs text-ink-500">
+                    ≈ {formatCents(bestPoints.dollar_value_cents)} guaranteed
+                  </p>
+                </div>
+              </div>
+              <p className="border-t border-ledger-800 px-4 py-2 text-xs text-ink-500">
+                Points value assumes the guaranteed redemption rate — worth more if you transfer to a
+                partner you&apos;d actually use, less if you just want cash in hand.
+              </p>
+            </div>
+          )}
 
           {/* Ledger entries — supporting detail */}
           <div className="mt-5 divide-y divide-ledger-800 border-y border-ledger-800">
