@@ -27,6 +27,7 @@ export async function POST(request: Request) {
           cpp_conservative: result.cpp_conservative,
           cpp_optimistic: result.cpp_optimistic,
           cpp_community: result.cpp_community,
+          cpp_portal: result.cpp_portal,
           valuation_notes: result.valuation_notes,
           sources: result.sources,
           last_updated: new Date().toISOString(),

@@ -126,6 +126,7 @@ export default function Home() {
     result?.ranked.find((r) => !r.excluded && r.card.reward_type === "cash_back") ?? null;
   const bestPoints =
     result?.ranked.find((r) => !r.excluded && r.card.reward_type !== "cash_back") ?? null;
+  const topPromos = top ? (result?.matched_promos.filter((p) => p.card_id === top.card.id) ?? []) : [];
   const topValuation = top ? result?.valuations[top.card.reward_program] : undefined;
   const topCategory = overrideCategory ?? result?.classification.category ?? "";
 
@@ -248,33 +249,6 @@ export default function Home() {
         </div>
       )}
 
-      {result && result.matched_promos.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {result.matched_promos.map((p) => (
-            <div key={p.id} className="border-l-2 border-signal bg-ledger-900 px-4 py-3 text-sm">
-              <p className="font-medium text-signal">
-                {p.card?.name ?? "A card"} · {p.title}
-                {formatPromoValue(p) && (
-                  <span className="ml-2 font-mono text-ink-100">{formatPromoValue(p)}</span>
-                )}
-              </p>
-              <p className="mt-1 text-xs text-ink-500">{p.description}</p>
-              {p.terms && <p className="mt-1 text-xs text-ink-500">Terms: {p.terms}</p>}
-              {p.source_url && (
-                <a
-                  href={p.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-block font-mono text-xs text-signal hover:underline"
-                >
-                  Source →
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       {top && (
         <div className="mt-6">
           {/* Card silhouette — the recommended physical card */}
@@ -315,6 +289,34 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Active promos for the recommended card */}
+          {topPromos.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {topPromos.map((p) => (
+                <div key={p.id} className="border-l-2 border-signal bg-ledger-900 px-4 py-3 text-sm">
+                  <p className="font-medium text-signal">
+                    {p.title}
+                    {formatPromoValue(p) && (
+                      <span className="ml-2 font-mono text-ink-100">{formatPromoValue(p)}</span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-500">{p.description}</p>
+                  {p.terms && <p className="mt-1 text-xs text-ink-500">Terms: {p.terms}</p>}
+                  {p.source_url && (
+                    <a
+                      href={p.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-block font-mono text-xs text-signal hover:underline"
+                    >
+                      Source →
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Why this card — purchase-specific decision summary */}
           <div className="mt-5 border-l-2 border-foil/40 bg-ledger-900 px-4 py-3 text-sm">
             <p className="mb-1.5 font-mono text-xs tracking-wide text-ink-500 uppercase">Why this card</p>
@@ -353,9 +355,12 @@ export default function Home() {
               )}
               {top.card.reward_type !== "cash_back" && (
                 <p>
-                  That assumes the <strong className="text-ink-100">guaranteed</strong> redemption value (
-                  {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")}) — open
-                  the calculation below to compare against an optimized-redemption estimate.
+                  That assumes{" "}
+                  <strong className="text-ink-100">
+                    {top.cpp_source === "portal" ? "the issuer portal's fixed redemption rate" : "the guaranteed redemption value"}
+                  </strong>{" "}
+                  ({top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")}) — open the
+                  calculation below to compare against an optimized-redemption estimate.
                 </p>
               )}
               {top.matched_category?.source_text && (
@@ -461,9 +466,11 @@ export default function Home() {
                       {top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")} (
                       {top.cpp_source === "override"
                         ? "your custom valuation"
-                        : top.cpp_source === "conservative"
-                          ? "guaranteed/conservative valuation"
-                          : "default — no valuation researched yet"}
+                        : top.cpp_source === "portal"
+                          ? "issuer travel portal fixed rate"
+                          : top.cpp_source === "conservative"
+                            ? "guaranteed/conservative valuation"
+                            : "default — no valuation researched yet"}
                       ) = <span className="text-ink-100">{formatCents(top.dollar_value_cents)}</span>{" "}
                       estimated value
                     </p>
@@ -492,6 +499,20 @@ export default function Home() {
                           >
                             Guaranteed: {formatCents(top.conservative_dollar_value_cents)} ({topValuation.cpp_conservative}¢)
                           </button>
+                          {top.portal_dollar_value_cents !== null && topValuation.cpp_portal !== null && (
+                            <button
+                              onClick={() => applyValuation(top.card.reward_program, topValuation.cpp_portal ?? 1)}
+                              disabled={applyingValuation}
+                              className={`border px-2 py-1 normal-case disabled:opacity-50 ${
+                                top.cpp_source === "portal" ||
+                                (top.cpp_source === "override" && top.cpp_used === topValuation.cpp_portal)
+                                  ? "border-signal text-signal"
+                                  : "border-ledger-700 text-ink-300 hover:bg-ledger-800"
+                              }`}
+                            >
+                              Booked via issuer portal: {formatCents(top.portal_dollar_value_cents)} ({topValuation.cpp_portal}¢)
+                            </button>
+                          )}
                           <button
                             onClick={() => applyValuation(top.card.reward_program, topValuation.cpp_community ?? 1)}
                             disabled={applyingValuation}

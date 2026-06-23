@@ -32,6 +32,7 @@ Find its official issuer benefits/terms page and extract:
 - base_earn_rate: the earn rate on purchases that don't match any bonus category
 - terms_url: the canonical official benefits page URL
 - categories: a list of bonus categories. Each category must use one of these names where applicable: ${REWARD_CATEGORIES.join(", ")}. For each category include earn_rate, any spending cap (cap_amount_cents in whole US cents, cap_period "quarterly" or "annual", or null if uncapped), is_rotating (true if this bonus category is only active for part of the year and changes on a schedule, like Discover it's or Chase Freedom's quarterly 5% categories — false for permanent bonus categories), source_text (the EXACT quoted sentence from the terms page that confirms this rate), and source_url (the specific page the quote came from).
+  - For travel: if the card's terms give one rate for booking through the issuer's own travel portal (e.g. Chase Travel, Amex Travel) and a different (usually lower) rate for booking direct with an airline/hotel, add separate "Travel - Portal" and "Travel - Direct" rows. If there is only one travel rate regardless of how it's booked, add a single "Travel - Portal" row AND a single "Travel - Direct" row with the same earn_rate, so both booking methods match.
 
 Only use official issuer sources for the rates themselves (not blogs) — blogs/Reddit are for a separate research step, not this one.
 

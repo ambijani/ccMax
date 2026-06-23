@@ -15,7 +15,9 @@ export async function classifyMerchant(merchantName: string): Promise<MerchantCl
 Apply these rules:
 - Costco and other membership warehouse clubs -> "Wholesale", not "Grocery" (most cards treat warehouse clubs differently from supermarkets).
 - Amazon.com purchases -> "Online Shopping", not "General" (treat marketplace/e-commerce platforms as their own category).
-- Airline or hotel websites/apps -> "Travel", but note in your reasoning if the merchant is also a card issuer's own travel portal (some cards only bonus purchases made directly through their portal, not the airline's own site).
+- Booking travel through a card issuer's own portal (e.g. "Chase Travel", "Amex Travel", "Capital One Travel", "Citi Travel") -> "Travel - Portal".
+- Booking directly with an airline, hotel, or other travel provider's own site/app (e.g. "United Airlines", "Marriott.com", "Delta", "Expedia" when not noted as a card portal) -> "Travel - Direct". This also covers vague trip mentions like "plane ticket" or "hotel" when no portal is named.
+- If the wording doesn't make clear whether a portal or the provider's own site was used, set ambiguous=true and list both "Travel - Portal" and "Travel - Direct" in alternative_categories.
 - If you are genuinely unsure between two categories, set ambiguous=true and list both in alternative_categories so the user can pick.
 
 Respond with ONLY a fenced \`\`\`json code block containing:

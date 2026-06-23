@@ -6,6 +6,7 @@ export interface ValuationResearchResult {
   cpp_conservative: number;
   cpp_optimistic: number;
   cpp_community: number;
+  cpp_portal: number | null;
   valuation_notes: string;
   sources: ValuationSource[];
 }
@@ -21,6 +22,7 @@ Determine:
 - cpp_conservative: cents-per-point cash-out/statement-credit value
 - cpp_optimistic: cents-per-point best-case transfer partner redemption value
 - cpp_community: the current community consensus "average" cents-per-point value people actually use when comparing cards
+- cpp_portal: if this program's card has its own issuer travel portal (e.g. Chase Travel, Amex Travel, Capital One Travel) with a fixed cents-per-point redemption rate for booking travel directly through it, that fixed rate; otherwise null
 - valuation_notes: 2-4 plain-language sentences summarizing how people are actually redeeming these points right now (e.g. specific transfer partners, new redemption options like Paze, limited-time transfer bonuses)
 - sources: an array of the specific pages/threads you used, each as {url, title, date, key_insight} where date is the publish date if known (else your best estimate) and key_insight is one sentence on what that source told you
 
@@ -30,6 +32,7 @@ Respond with ONLY a fenced \`\`\`json code block containing:
   "cpp_conservative": number,
   "cpp_optimistic": number,
   "cpp_community": number,
+  "cpp_portal": number | null,
   "valuation_notes": string,
   "sources": Array<{ "url": string, "title": string, "date": string, "key_insight": string }>
 }`;

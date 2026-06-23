@@ -43,6 +43,7 @@ export interface PointsValuation {
   cpp_conservative: number | null;
   cpp_optimistic: number | null;
   cpp_community: number | null;
+  cpp_portal: number | null;
   valuation_notes: string | null;
   sources: ValuationSource[];
   last_updated: string;
@@ -83,7 +84,8 @@ export interface Purchase {
 
 export const REWARD_CATEGORIES = [
   "Dining/Restaurants",
-  "Travel",
+  "Travel - Portal",
+  "Travel - Direct",
   "Grocery",
   "Wholesale",
   "Gas",
@@ -108,9 +110,10 @@ export interface RankedCardResult {
   points_earned: number;
   dollar_value_cents: number;
   cpp_used: number | null;
-  cpp_source: "override" | "conservative" | "default" | null;
+  cpp_source: "override" | "portal" | "conservative" | "default" | null;
   conservative_dollar_value_cents: number | null;
   community_dollar_value_cents: number | null;
+  portal_dollar_value_cents: number | null;
   cap_status: "ok" | "warning" | "hit" | "none";
   cap_percent_used: number | null;
   excluded: boolean;
