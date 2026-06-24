@@ -77,6 +77,7 @@ export async function POST(request: Request) {
         is_rotating: c.is_rotating ?? false,
         source_text: c.source_text,
         source_url: c.source_url,
+        excluded_merchants: c.excluded_merchants?.length ? c.excluded_merchants : null,
       })),
     );
     if (catError) return NextResponse.json({ error: catError.message }, { status: 500 });

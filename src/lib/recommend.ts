@@ -12,7 +12,19 @@ function findCategoryMatch(card: CardWithCategories, category: string) {
     return card.card_categories.find((c) => c.category.toLowerCase() === "travel") ?? null;
   }
 
+  // Cards configured before the Online Grocery split, or that simply don't
+  // distinguish it, still have a plain "Grocery" row — fall back to that.
+  if (category.toLowerCase() === "online grocery") {
+    return card.card_categories.find((c) => c.category.toLowerCase() === "grocery") ?? null;
+  }
+
   return null;
+}
+
+function isMerchantExcluded(category: { excluded_merchants: string[] | null }, merchantName: string) {
+  if (!category.excluded_merchants?.length) return false;
+  const merchantLower = merchantName.toLowerCase();
+  return category.excluded_merchants.some((m) => merchantLower.includes(m.toLowerCase()));
 }
 
 export function rankCardsForPurchase(
@@ -21,11 +33,14 @@ export function rankCardsForPurchase(
   amountCents: number,
   valuationsByProgram: Record<string, PointsValuation>,
   cppOverridesByProgram: Record<string, number> = {},
+  merchantName: string = "",
 ): RankedCardResult[] {
   const amountDollars = amountCents / 100;
 
   const results: RankedCardResult[] = cards.map((card) => {
-    const matched = findCategoryMatch(card, category);
+    const categoryMatch = findCategoryMatch(card, category);
+    const merchantExcluded = categoryMatch !== null && isMerchantExcluded(categoryMatch, merchantName);
+    const matched = merchantExcluded ? null : categoryMatch;
     const earnRate = matched?.earn_rate ?? card.base_earn_rate;
 
     let capStatus: RankedCardResult["cap_status"] = "none";
@@ -90,6 +105,7 @@ export function rankCardsForPurchase(
     return {
       card,
       matched_category: matched,
+      merchant_excluded_category: merchantExcluded ? categoryMatch : null,
       earn_rate: earnRate,
       points_earned: pointsEarned,
       dollar_value_cents: dollarValueCents,

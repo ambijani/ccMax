@@ -133,7 +133,7 @@ export default function SettingsPage() {
             const communityCpp = valuations[program]?.cpp_community;
             const current = overrides[program];
             return (
-              <div key={program} className="flex items-center justify-between py-3">
+              <div key={program} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-medium text-ink-100">{program}</p>
                   <p className="font-mono text-xs text-ink-500">
@@ -186,7 +186,7 @@ export default function SettingsPage() {
             const needsUpdate = cat.is_rotating && cat.needs_review;
             return (
               <div key={cat.id} className="py-3 text-sm">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-ink-300">
                     {card.name} · {cat.category}
                     {cat.is_rotating && (

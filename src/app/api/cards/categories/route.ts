@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { cardId, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl } = body;
+  const { cardId, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants } = body;
   if (!cardId || !category || typeof earnRate !== "number") {
     return NextResponse.json(
       { error: "cardId, category, and earnRate are required" },
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       is_rotating: isRotating ?? false,
       source_text: sourceText ?? null,
       source_url: sourceUrl ?? null,
+      excluded_merchants: excludedMerchants?.length ? excludedMerchants : null,
     })
     .select()
     .single();
@@ -40,7 +41,7 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl } = body;
+  const { id, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const update: Record<string, unknown> = { needs_review: false };
@@ -51,6 +52,7 @@ export async function PATCH(request: Request) {
   if (isRotating !== undefined) update.is_rotating = isRotating;
   if (sourceText !== undefined) update.source_text = sourceText;
   if (sourceUrl !== undefined) update.source_url = sourceUrl;
+  if (excludedMerchants !== undefined) update.excluded_merchants = excludedMerchants?.length ? excludedMerchants : null;
 
   const { data, error } = await supabase
     .from("card_categories")

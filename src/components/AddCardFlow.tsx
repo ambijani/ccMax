@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { CardIngestionResult, CardIngestionCategory } from "@/lib/ai/cardIngestion";
 import { rewardUnit } from "@/lib/format";
 import { REWARD_CATEGORIES } from "@/lib/types";
@@ -31,6 +31,7 @@ function emptyCategory(): CardIngestionCategory {
     is_rotating: false,
     source_text: "",
     source_url: null,
+    excluded_merchants: null,
   };
 }
 
@@ -41,8 +42,11 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<CardIngestionResult | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function research() {
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
     try {
@@ -50,15 +54,22 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardName }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Ingestion failed");
       setDraft(data);
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+      abortRef.current = null;
     }
+  }
+
+  function cancelResearch() {
+    abortRef.current?.abort();
   }
 
   function updateDraftField<K extends keyof CardIngestionResult>(
@@ -151,10 +162,10 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
               Enter manually
             </button>
             <button
-              onClick={() => setOpen(false)}
+              onClick={loading ? cancelResearch : () => setOpen(false)}
               className="border border-ledger-700 px-3 py-2 text-sm text-ink-300 hover:bg-ledger-800"
             >
-              Cancel
+              {loading ? "Cancel research" : "Cancel"}
             </button>
           </div>
         </>
@@ -165,7 +176,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
           <p className="mb-3 font-mono text-xs tracking-wide text-ink-500 uppercase">
             Card details — edit anything Claude got wrong
           </p>
-          <div className="mb-6 grid grid-cols-2 gap-4">
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Card name">
               <input
                 value={draft.name}
@@ -238,7 +249,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
           <ul className="divide-y divide-ledger-800 border-y border-ledger-800">
             {draft.categories.map((c, i) => (
               <li key={i} className="py-3 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={c.category}
                     onChange={(e) => updateCategory(i, { category: e.target.value })}
@@ -269,7 +280,7 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                     Remove
                   </button>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <input
                     type="number"
                     placeholder="Cap $ (optional)"
@@ -316,6 +327,18 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                   value={c.source_url ?? ""}
                   onChange={(e) => updateCategory(i, { source_url: e.target.value || null })}
                   placeholder="Source URL"
+                  className="field-line mt-1 w-full text-xs"
+                />
+                <input
+                  value={c.excluded_merchants?.join(", ") ?? ""}
+                  onChange={(e) =>
+                    updateCategory(i, {
+                      excluded_merchants: e.target.value
+                        ? e.target.value.split(",").map((m) => m.trim()).filter(Boolean)
+                        : null,
+                    })
+                  }
+                  placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
                   className="field-line mt-1 w-full text-xs"
                 />
               </li>

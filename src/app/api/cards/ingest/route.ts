@@ -17,9 +17,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await ingestCard(cardName);
+    const result = await ingestCard(cardName, { signal: request.signal });
     return NextResponse.json(result);
   } catch (err) {
+    if (request.signal.aborted) return new NextResponse(null, { status: 499 });
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Ingestion failed" },
       { status: 502 },

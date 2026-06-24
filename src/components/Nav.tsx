@@ -16,11 +16,11 @@ export default function Nav() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-ledger-800 bg-ledger-950/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-        <Link href="/" className="font-display text-sm font-medium tracking-[0.2em] text-ink-100 uppercase">
+      <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-y-2 px-4 py-4">
+        <Link href="/" className="shrink-0 font-display text-sm font-medium tracking-[0.2em] text-ink-100 uppercase">
           Ledger<span className="text-foil">·</span>Optimizer
         </Link>
-        <div className="flex items-center gap-5 font-mono text-xs tracking-wide uppercase">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-xs tracking-wide uppercase sm:gap-5">
           {links.map((link) => (
             <Link
               key={link.href}

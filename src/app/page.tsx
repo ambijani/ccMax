@@ -230,7 +230,7 @@ export default function Home() {
             Not sure whether this is <strong className="text-ink-100">{result.classification.category}</strong> or
             another category: {result.classification.reasoning}
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[result.classification.category, ...result.classification.alternative_categories].map(
               (cat) => (
                 <button
@@ -336,6 +336,13 @@ export default function Home() {
                   </>
                 )}
               </p>
+              {top.merchant_excluded_category && (
+                <p className="text-alert">
+                  {top.merchant_excluded_category.category} on {top.card.name} excludes this
+                  merchant ({top.merchant_excluded_category.excluded_merchants?.join(", ")}), so
+                  the base rate is used instead.
+                </p>
+              )}
               {bestAlt && (
                 <p>
                   {top.dollar_value_cents > bestAlt.dollar_value_cents ? (
@@ -393,7 +400,7 @@ export default function Home() {
               <p className="border-b border-ledger-800 bg-ledger-900 px-4 py-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
                 Cash back vs. points
               </p>
-              <div className="grid grid-cols-2 divide-x divide-ledger-800">
+              <div className="grid grid-cols-1 divide-y divide-ledger-800 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 <div className="px-4 py-3">
                   <div className="mb-1 flex items-center gap-2 font-mono text-xs tracking-wide text-ink-500 uppercase">
                     <span>Most cash back</span>

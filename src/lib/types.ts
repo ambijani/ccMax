@@ -27,6 +27,7 @@ export interface CardCategory {
   needs_review: boolean;
   source_text: string | null;
   source_url: string | null;
+  excluded_merchants: string[] | null;
   created_at: string;
 }
 
@@ -87,6 +88,7 @@ export const REWARD_CATEGORIES = [
   "Travel - Portal",
   "Travel - Direct",
   "Grocery",
+  "Online Grocery",
   "Wholesale",
   "Gas",
   "Streaming",
@@ -106,6 +108,7 @@ export interface CardWithCategories extends Card {
 export interface RankedCardResult {
   card: CardWithCategories;
   matched_category: CardCategory | null;
+  merchant_excluded_category: CardCategory | null;
   earn_rate: number;
   points_earned: number;
   dollar_value_cents: number;

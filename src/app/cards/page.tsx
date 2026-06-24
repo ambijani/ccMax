@@ -60,8 +60,8 @@ function CardBanner({ card, onSaved }: { card: CardWithCategories; onSaved: () =
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 px-5 py-4">
-        <div>
+      <div className="flex flex-col gap-3 rounded-[10px] border border-ledger-700 bg-gradient-to-br from-ledger-900 to-ledger-850 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 font-mono text-xs tracking-[0.15em] text-ink-500 uppercase">
             {card.issuer && <span>{card.issuer}</span>}
             {card.issuer && card.network && <span className="text-ledger-700">·</span>}
@@ -69,11 +69,11 @@ function CardBanner({ card, onSaved }: { card: CardWithCategories; onSaved: () =
           </div>
           <p className="mt-1 font-display text-base font-medium text-ink-100">{card.name}</p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="font-mono text-sm text-foil">
             base {formatEarnRate(card.reward_type, card.base_earn_rate)}
           </p>
-          <div className="mt-1 flex items-center justify-end gap-3">
+          <div className="mt-1 flex items-center gap-3 sm:justify-end">
             {card.terms_url && (
               <a
                 href={card.terms_url}
@@ -98,7 +98,7 @@ function CardBanner({ card, onSaved }: { card: CardWithCategories; onSaved: () =
 
   return (
     <div className="rounded-[10px] border border-ledger-700 bg-ledger-900 p-5">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Card name">
           <input
             value={name}
@@ -243,7 +243,7 @@ function PromoSection({ cardId }: { cardId: string }) {
 
   return (
     <div className="py-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-mono text-xs tracking-wide text-ink-500 uppercase">
           Active promos &amp; offers
         </p>
@@ -335,6 +335,7 @@ function CategoryRow({
   const [isRotating, setIsRotating] = useState(cat.is_rotating);
   const [sourceText, setSourceText] = useState(cat.source_text ?? "");
   const [sourceUrl, setSourceUrl] = useState(cat.source_url ?? "");
+  const [excludedMerchants, setExcludedMerchants] = useState(cat.excluded_merchants?.join(", ") ?? "");
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
 
@@ -356,6 +357,9 @@ function CategoryRow({
           isRotating,
           sourceText: sourceText || null,
           sourceUrl: sourceUrl || null,
+          excludedMerchants: excludedMerchants
+            ? excludedMerchants.split(",").map((m) => m.trim()).filter(Boolean)
+            : null,
         }),
       });
       setEditing(false);
@@ -392,7 +396,7 @@ function CategoryRow({
   if (!editing) {
     return (
       <li className="py-3 text-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-ink-100">
             {cat.category}
             {cat.is_rotating && (
@@ -441,6 +445,11 @@ function CategoryRow({
             </p>
           </div>
         )}
+        {cat.excluded_merchants && cat.excluded_merchants.length > 0 && (
+          <p className="mt-2 font-mono text-xs text-ink-500">
+            Excludes: {cat.excluded_merchants.join(", ")}
+          </p>
+        )}
         {(cat.source_text || cat.source_url) && (
           <div className="mt-2 border-l-2 border-ledger-700 pl-3">
             <p className="font-mono text-xs tracking-wide text-ink-500 uppercase">Research</p>
@@ -465,7 +474,7 @@ function CategoryRow({
 
   return (
     <li className="py-3 text-sm">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -486,7 +495,7 @@ function CategoryRow({
         />
         <span className="font-mono text-xs text-ink-500">×</span>
       </div>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <input
           type="number"
           placeholder="Cap $ (optional)"
@@ -523,6 +532,12 @@ function CategoryRow({
         value={sourceUrl}
         onChange={(e) => setSourceUrl(e.target.value)}
         placeholder="Source URL"
+        className="field-line mt-1 w-full text-xs"
+      />
+      <input
+        value={excludedMerchants}
+        onChange={(e) => setExcludedMerchants(e.target.value)}
+        placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
         className="field-line mt-1 w-full text-xs"
       />
       <div className="mt-2 flex gap-2">
@@ -592,7 +607,7 @@ function AddCategoryRow({ cardId, onSaved }: { cardId: string; onSaved: () => vo
   }
 
   return (
-    <div className="flex items-center gap-2 py-3">
+    <div className="flex flex-wrap items-center gap-2 py-3">
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
@@ -664,7 +679,7 @@ export default function CardsPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="mb-1 font-mono text-xs tracking-[0.2em] text-foil uppercase">The wallet</p>
           <h1 className="font-display text-2xl font-medium text-ink-100">My Cards</h1>

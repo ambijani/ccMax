@@ -9,6 +9,7 @@ export interface CardIngestionCategory {
   is_rotating: boolean;
   source_text: string | null;
   source_url: string | null;
+  excluded_merchants: string[] | null;
 }
 
 export interface CardIngestionResult {
@@ -22,7 +23,10 @@ export interface CardIngestionResult {
   categories: CardIngestionCategory[];
 }
 
-export async function ingestCard(cardName: string): Promise<CardIngestionResult> {
+export async function ingestCard(
+  cardName: string,
+  options?: { signal?: AbortSignal },
+): Promise<CardIngestionResult> {
   const prompt = `You are researching the official benefits of the credit card "${cardName}" using web search.
 
 Find its official issuer benefits/terms page and extract:
@@ -31,8 +35,9 @@ Find its official issuer benefits/terms page and extract:
 - reward_program name (e.g. "Chase Ultimate Rewards"); if cash back, use the card's own name
 - base_earn_rate: the earn rate on purchases that don't match any bonus category
 - terms_url: the canonical official benefits page URL
-- categories: a list of bonus categories. Each category must use one of these names where applicable: ${REWARD_CATEGORIES.join(", ")}. For each category include earn_rate, any spending cap (cap_amount_cents in whole US cents, cap_period "quarterly" or "annual", or null if uncapped), is_rotating (true if this bonus category is only active for part of the year and changes on a schedule, like Discover it's or Chase Freedom's quarterly 5% categories — false for permanent bonus categories), source_text (the EXACT quoted sentence from the terms page that confirms this rate), and source_url (the specific page the quote came from).
+- categories: a list of bonus categories. Each category must use one of these names where applicable: ${REWARD_CATEGORIES.join(", ")}. For each category include earn_rate, any spending cap (cap_amount_cents in whole US cents, cap_period "quarterly" or "annual", or null if uncapped), is_rotating (true if this bonus category is only active for part of the year and changes on a schedule, like Discover it's or Chase Freedom's quarterly 5% categories — false for permanent bonus categories), source_text (the EXACT quoted sentence from the terms page that confirms this rate), source_url (the specific page the quote came from), and excluded_merchants (an array of specific merchant/retailer names the terms explicitly carve out of this category, e.g. ["Walmart", "Target"] for a grocery category that excludes superstores — null or [] if the terms don't name any exclusions).
   - For travel: if the card's terms give one rate for booking through the issuer's own travel portal (e.g. Chase Travel, Amex Travel) and a different (usually lower) rate for booking direct with an airline/hotel, add separate "Travel - Portal" and "Travel - Direct" rows. If there is only one travel rate regardless of how it's booked, add a single "Travel - Portal" row AND a single "Travel - Direct" row with the same earn_rate, so both booking methods match.
+  - For grocery: if the card's terms give a distinct rate for online grocery delivery/pickup (e.g. Instacart, Amazon Fresh, a supermarket's own delivery/pickup) separate from in-store supermarket purchases, add a separate "Online Grocery" row in addition to "Grocery". If there's only one grocery rate, a plain "Grocery" row is enough — it will be used for online grocery purchases too.
 
 Only use official issuer sources for the rates themselves (not blogs) — blogs/Reddit are for a separate research step, not this one.
 
@@ -53,9 +58,10 @@ Respond with ONLY a fenced \`\`\`json code block containing an object matching t
     "cap_period": "quarterly" | "annual" | null,
     "is_rotating": boolean,
     "source_text": string,
-    "source_url": string
+    "source_url": string,
+    "excluded_merchants": string[] | null
   }>
 }`;
 
-  return researchToJson<CardIngestionResult>(prompt);
+  return researchToJson<CardIngestionResult>(prompt, options);
 }

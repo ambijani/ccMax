@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     amountCents,
     valuationsByProgram,
     overridesByProgram,
+    merchantName,
   );
 
   const cardIds = (cards ?? []).map((c) => c.id);

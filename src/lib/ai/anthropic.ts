@@ -15,13 +15,16 @@ const WEB_SEARCH_TOOL = {
  * instructed to emit as the final fenced ```json block (text before/after it
  * is the model's research narration, which callers can ignore).
  */
-export async function researchToJson<T>(prompt: string): Promise<T> {
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    tools: [WEB_SEARCH_TOOL],
-    messages: [{ role: "user", content: prompt }],
-  });
+export async function researchToJson<T>(prompt: string, options?: { signal?: AbortSignal }): Promise<T> {
+  const response = await anthropic.messages.create(
+    {
+      model: MODEL,
+      max_tokens: 4096,
+      tools: [WEB_SEARCH_TOOL],
+      messages: [{ role: "user", content: prompt }],
+    },
+    { signal: options?.signal },
+  );
 
   const text = response.content
     .filter((block) => block.type === "text")
