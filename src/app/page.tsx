@@ -20,6 +20,7 @@ interface RecommendResponse {
   ranked: RankedCardResult[];
   valuations: Record<string, PointsValuation>;
   matched_promos: MatchedPromo[];
+  research_notes: Record<string, string>;
 }
 
 function formatPromoValue(promo: CardPromo) {
@@ -371,6 +372,11 @@ export default function Home() {
                   </strong>{" "}
                   ({top.cpp_used?.toFixed(2)}¢/{rewardUnit(top.card.reward_type).replace(/s$/, "")}) — open the
                   calculation below to compare against an optimized-redemption estimate.
+                </p>
+              )}
+              {result.research_notes[top.card.id] && (
+                <p className="border-l-2 border-foil/60 pl-3 text-xs text-ink-300">
+                  {result.research_notes[top.card.id]}
                 </p>
               )}
               {top.matched_category?.source_text && (

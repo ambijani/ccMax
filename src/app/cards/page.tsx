@@ -185,6 +185,90 @@ function formatPromoValue(promo: CardPromo) {
   return null;
 }
 
+function emptyPromoForm() {
+  return { title: "", description: "", merchant_keywords: "", expires_at: "", source_text: "", source_url: "", value_percent: "", value_cents: "" };
+}
+
+function promoFormBody(f: ReturnType<typeof emptyPromoForm>) {
+  const keywords = f.merchant_keywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+  return {
+    title: f.title.trim(),
+    description: f.description.trim() || null,
+    merchantKeywords: keywords.length ? keywords : null,
+    expiresAt: f.expires_at || null,
+    sourceText: f.source_text.trim() || null,
+    sourceUrl: f.source_url.trim() || null,
+    valuePercent: f.value_percent ? parseFloat(f.value_percent) : null,
+    valueCents: f.value_cents ? Math.round(parseFloat(f.value_cents) * 100) : null,
+  };
+}
+
+function PromoFormFields({
+  form,
+  setForm,
+}: {
+  form: ReturnType<typeof emptyPromoForm>;
+  setForm: (patch: Partial<ReturnType<typeof emptyPromoForm>>) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <input
+        placeholder="Title (required)"
+        value={form.title}
+        onChange={(e) => setForm({ title: e.target.value })}
+        className="field-line col-span-2 text-xs"
+      />
+      <input
+        placeholder="Description"
+        value={form.description}
+        onChange={(e) => setForm({ description: e.target.value })}
+        className="field-line col-span-2 text-xs"
+      />
+      <input
+        placeholder="Merchant keywords (lyft, uber…)"
+        value={form.merchant_keywords}
+        onChange={(e) => setForm({ merchant_keywords: e.target.value })}
+        className="field-line text-xs"
+      />
+      <input
+        type="date"
+        value={form.expires_at}
+        onChange={(e) => setForm({ expires_at: e.target.value })}
+        className="field-line text-xs"
+      />
+      <input
+        type="number"
+        step="0.1"
+        placeholder="Earn rate (e.g. 2 for 2×)"
+        value={form.value_percent}
+        onChange={(e) => setForm({ value_percent: e.target.value })}
+        className="field-line text-xs"
+      />
+      <input
+        type="number"
+        step="0.01"
+        placeholder="Fixed value $ (e.g. 10)"
+        value={form.value_cents}
+        onChange={(e) => setForm({ value_cents: e.target.value })}
+        className="field-line text-xs"
+      />
+      <textarea
+        placeholder="Source text (paste benefit text)"
+        value={form.source_text}
+        onChange={(e) => setForm({ source_text: e.target.value })}
+        rows={2}
+        className="field-line col-span-2 text-xs"
+      />
+      <input
+        placeholder="Source URL"
+        value={form.source_url}
+        onChange={(e) => setForm({ source_url: e.target.value })}
+        className="field-line col-span-2 text-xs"
+      />
+    </div>
+  );
+}
+
 function PromoSection({ cardId }: { cardId: string }) {
   const [promos, setPromos] = useState<CardPromo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,14 +276,9 @@ function PromoSection({ cardId }: { cardId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    merchant_keywords: "",
-    expires_at: "",
-    source_text: "",
-    source_url: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyPromoForm());
+  const [editForm, setEditForm] = useState(emptyPromoForm());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -212,15 +291,8 @@ function PromoSection({ cardId }: { cardId: string }) {
     let active = true;
     fetch(`/api/cards/promos?cardId=${cardId}`)
       .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (active) {
-          setPromos(data);
-          setLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
+      .then((data) => { if (active) { setPromos(data); setLoading(false); } });
+    return () => { active = false; };
   }, [cardId]);
 
   async function research() {
@@ -243,11 +315,7 @@ function PromoSection({ cardId }: { cardId: string }) {
   }
 
   async function remove(id: string) {
-    await fetch("/api/cards/promos", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+    await fetch("/api/cards/promos", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     load();
   }
 
@@ -256,27 +324,50 @@ function PromoSection({ cardId }: { cardId: string }) {
     setSaving(true);
     setError(null);
     try {
-      const keywords = form.merchant_keywords
-        .split(",")
-        .map((k) => k.trim().toLowerCase())
-        .filter(Boolean);
       const res = await fetch("/api/cards/promos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cardId,
-          title: form.title.trim(),
-          description: form.description.trim(),
-          merchantKeywords: keywords.length ? keywords : null,
-          expiresAt: form.expires_at || null,
-          sourceText: form.source_text.trim() || null,
-          sourceUrl: form.source_url.trim() || null,
-        }),
+        body: JSON.stringify({ cardId, ...promoFormBody(form) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
       setAdding(false);
-      setForm({ title: "", description: "", merchant_keywords: "", expires_at: "", source_text: "", source_url: "" });
+      setForm(emptyPromoForm());
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(p: CardPromo) {
+    setEditingId(p.id);
+    setEditForm({
+      title: p.title,
+      description: p.description ?? "",
+      merchant_keywords: p.merchant_keywords?.join(", ") ?? "",
+      expires_at: p.expires_at ? p.expires_at.split("T")[0] : "",
+      source_text: p.source_text ?? "",
+      source_url: p.source_url ?? "",
+      value_percent: p.value_percent != null ? String(p.value_percent) : "",
+      value_cents: p.value_cents != null ? String(p.value_cents / 100) : "",
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingId || !editForm.title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/cards/promos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingId, ...promoFormBody(editForm) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      setEditingId(null);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -293,7 +384,7 @@ function PromoSection({ cardId }: { cardId: string }) {
         </p>
         <div className="flex gap-3">
           <button
-            onClick={() => setAdding((v) => !v)}
+            onClick={() => { setAdding((v) => !v); setEditingId(null); }}
             className="font-mono text-xs text-ink-500 hover:text-foil"
           >
             {adding ? "Cancel" : "+ Add manually"}
@@ -310,46 +401,7 @@ function PromoSection({ cardId }: { cardId: string }) {
       {error && <p className="mt-1 font-mono text-xs text-alert">{error}</p>}
       {adding && (
         <div className="mt-3 border border-ledger-700 bg-ledger-950 p-3 text-xs">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <input
-              placeholder="Title (required)"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              className="field-line col-span-2 text-xs"
-            />
-            <input
-              placeholder="Description"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="field-line col-span-2 text-xs"
-            />
-            <input
-              placeholder="Merchant keywords (lyft, uber…)"
-              value={form.merchant_keywords}
-              onChange={(e) => setForm((f) => ({ ...f, merchant_keywords: e.target.value }))}
-              className="field-line text-xs"
-            />
-            <input
-              type="date"
-              placeholder="Expires"
-              value={form.expires_at}
-              onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
-              className="field-line text-xs"
-            />
-            <textarea
-              placeholder="Source text (paste benefit text)"
-              value={form.source_text}
-              onChange={(e) => setForm((f) => ({ ...f, source_text: e.target.value }))}
-              rows={2}
-              className="field-line col-span-2 text-xs"
-            />
-            <input
-              placeholder="Source URL"
-              value={form.source_url}
-              onChange={(e) => setForm((f) => ({ ...f, source_url: e.target.value }))}
-              className="field-line col-span-2 text-xs"
-            />
-          </div>
+          <PromoFormFields form={form} setForm={(patch) => setForm((f) => ({ ...f, ...patch }))} />
           <button
             onClick={saveManual}
             disabled={saving || !form.title.trim()}
@@ -368,44 +420,70 @@ function PromoSection({ cardId }: { cardId: string }) {
         <ul className="mt-2 divide-y divide-ledger-800">
           {promos.map((p) => (
             <li key={p.id} className="py-2.5 text-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium text-ink-100">
-                    {p.title}
-                    {formatPromoValue(p) && (
-                      <span className="ml-2 font-mono text-signal">{formatPromoValue(p)}</span>
-                    )}
-                  </p>
-                  <p className="mt-1 text-xs text-ink-500">{p.description}</p>
-                  {p.merchant_keywords && p.merchant_keywords.length > 0 && (
-                    <p className="mt-1 font-mono text-xs text-ink-500">
-                      Eligible at: {p.merchant_keywords.join(", ")}
-                    </p>
-                  )}
-                  {p.terms && <p className="mt-1 text-xs text-ink-500">Terms: {p.terms}</p>}
-                  {p.expires_at && (
-                    <p className="mt-1 font-mono text-xs text-alert">
-                      Expires {new Date(p.expires_at).toLocaleDateString()}
-                    </p>
-                  )}
-                  {p.source_url && (
-                    <a
-                      href={p.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-block font-mono text-xs text-foil hover:underline"
+              {editingId === p.id ? (
+                <div className="border border-ledger-700 bg-ledger-950 p-3 text-xs">
+                  <PromoFormFields form={editForm} setForm={(patch) => setEditForm((f) => ({ ...f, ...patch }))} />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={saveEdit}
+                      disabled={saving || !editForm.title.trim()}
+                      className="bg-foil px-3 py-1.5 text-xs font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
                     >
-                      Source →
-                    </a>
-                  )}
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="border border-ledger-700 px-3 py-1.5 text-xs text-ink-300 hover:bg-ledger-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => remove(p.id)}
-                  className="shrink-0 border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
-                >
-                  Dismiss
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-ink-100">
+                      {p.title}
+                      {p.value_percent != null && (
+                        <span className="ml-2 font-mono text-signal">{p.value_percent}×</span>
+                      )}
+                      {p.value_cents != null && (
+                        <span className="ml-2 font-mono text-signal">${(p.value_cents / 100).toFixed(0)} off</span>
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-ink-500">{p.description}</p>
+                    {p.merchant_keywords && p.merchant_keywords.length > 0 && (
+                      <p className="mt-1 font-mono text-xs text-ink-500">
+                        Eligible at: {p.merchant_keywords.join(", ")}
+                      </p>
+                    )}
+                    {p.expires_at && (
+                      <p className="mt-1 font-mono text-xs text-alert">
+                        Expires {new Date(p.expires_at).toLocaleDateString()}
+                      </p>
+                    )}
+                    {p.source_url && (
+                      <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-1 inline-block font-mono text-xs text-foil hover:underline">
+                        Source →
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => startEdit(p)}
+                      className="border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => remove(p.id)}
+                      className="border border-ledger-700 px-2 py-1 font-mono text-xs text-ink-500 hover:bg-ledger-800"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>

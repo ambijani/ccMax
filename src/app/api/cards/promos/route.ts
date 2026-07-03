@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { cardId, title, description, merchantKeywords, expiresAt, sourceText, sourceUrl } = await request.json();
+  const { cardId, title, description, merchantKeywords, expiresAt, sourceText, sourceUrl, valuePercent, valueCents } = await request.json();
   if (!cardId || !title) return NextResponse.json({ error: "cardId and title are required" }, { status: 400 });
 
   const { data: card } = await supabase.from("cards").select("id").eq("id", cardId).eq("user_id", user.id).single();
@@ -36,7 +36,38 @@ export async function POST(request: Request) {
     expires_at: expiresAt ?? null,
     source_text: sourceText ?? null,
     source_url: sourceUrl ?? null,
+    value_percent: valuePercent ?? null,
+    value_cents: valueCents ?? null,
   }).select().single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
+export async function PATCH(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id, title, description, merchantKeywords, expiresAt, sourceText, sourceUrl, valuePercent, valueCents } = await request.json();
+  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+  const update: Record<string, unknown> = {};
+  if (title !== undefined) update.title = title;
+  if (description !== undefined) update.description = description;
+  if (merchantKeywords !== undefined) update.merchant_keywords = merchantKeywords?.length ? merchantKeywords : null;
+  if (expiresAt !== undefined) update.expires_at = expiresAt;
+  if (sourceText !== undefined) update.source_text = sourceText;
+  if (sourceUrl !== undefined) update.source_url = sourceUrl;
+  if (valuePercent !== undefined) update.value_percent = valuePercent;
+  if (valueCents !== undefined) update.value_cents = valueCents;
+
+  const { data, error } = await supabase
+    .from("card_promos")
+    .update(update)
+    .eq("id", id)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);

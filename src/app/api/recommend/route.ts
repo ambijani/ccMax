@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { classifyMerchant } from "@/lib/ai/classifyMerchant";
 import { rankCardsForPurchase } from "@/lib/recommend";
+import { verifyEarnRate } from "@/lib/ai/verifyEarnRate";
 import type { CardPromo, CardWithCategories, PointsValuation, UserCppOverride } from "@/lib/types";
 
 function matchesPromo(merchantName: string, promo: CardPromo): boolean {
@@ -92,10 +93,34 @@ export async function POST(request: Request) {
     promosByCardId,
   );
 
+  // Run research for top cards that have source_text on their matched category.
+  const researchCandidates = ranked
+    .filter((r) => !r.excluded && r.matched_category?.source_text)
+    .slice(0, 3);
+
+  const researchResults = await Promise.allSettled(
+    researchCandidates.map((r) =>
+      verifyEarnRate(
+        merchantName,
+        r.matched_category!.category,
+        r.effective_earn_rate,
+        r.card.name,
+        r.card.reward_type,
+        r.matched_category!.source_text!,
+      ).then((note) => ({ cardId: r.card.id, note })),
+    ),
+  );
+
+  const research_notes: Record<string, string> = {};
+  for (const result of researchResults) {
+    if (result.status === "fulfilled") research_notes[result.value.cardId] = result.value.note;
+  }
+
   return NextResponse.json({
     classification,
     ranked,
     valuations: valuationsByProgram,
     matched_promos: matchedPromos.map((p) => ({ ...p, card: (cards ?? []).find((c) => c.id === p.card_id) })),
+    research_notes,
   });
 }
