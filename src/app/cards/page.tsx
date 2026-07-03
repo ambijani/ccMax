@@ -553,21 +553,15 @@ function CategoryRow({
         className="field-line mt-1 w-full text-xs"
       />
       <input
-        value={excludedMerchants}
-        onChange={(e) => setExcludedMerchants(e.target.value)}
-        placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
-        className="field-line mt-1 w-full text-xs"
-      />
-      <input
         value={includedMerchants}
         onChange={(e) => setIncludedMerchants(e.target.value)}
-        placeholder="Also counts as this category (optional): uber, lyft, parking, transit…"
+        placeholder="Also earns this rate at (optional): uber, lyft, parking…"
         className="field-line mt-1 w-full text-xs"
       />
       <input
-        value={purchaseTypes}
-        onChange={(e) => setPurchaseTypes(e.target.value)}
-        placeholder="Applies only to (optional): hotel, rental car, flight… (comma-separated keywords)"
+        value={excludedMerchants}
+        onChange={(e) => setExcludedMerchants(e.target.value)}
+        placeholder="Except at (optional): Walmart, Target…"
         className="field-line mt-1 w-full text-xs"
       />
       <div className="mt-2 flex gap-2">

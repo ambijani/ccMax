@@ -332,18 +332,6 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                   className="field-line mt-1 w-full text-xs"
                 />
                 <input
-                  value={c.excluded_merchants?.join(", ") ?? ""}
-                  onChange={(e) =>
-                    updateCategory(i, {
-                      excluded_merchants: e.target.value
-                        ? e.target.value.split(",").map((m) => m.trim()).filter(Boolean)
-                        : null,
-                    })
-                  }
-                  placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
-                  className="field-line mt-1 w-full text-xs"
-                />
-                <input
                   value={c.included_merchants?.join(", ") ?? ""}
                   onChange={(e) =>
                     updateCategory(i, {
@@ -352,19 +340,19 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                         : null,
                     })
                   }
-                  placeholder="Also counts as this category (optional): uber, lyft, parking, transit…"
+                  placeholder="Also earns this rate at (optional): uber, lyft, parking…"
                   className="field-line mt-1 w-full text-xs"
                 />
                 <input
-                  value={c.purchase_types?.join(", ") ?? ""}
+                  value={c.excluded_merchants?.join(", ") ?? ""}
                   onChange={(e) =>
                     updateCategory(i, {
-                      purchase_types: e.target.value
-                        ? e.target.value.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
+                      excluded_merchants: e.target.value
+                        ? e.target.value.split(",").map((m) => m.trim()).filter(Boolean)
                         : null,
                     })
                   }
-                  placeholder="Applies only to (optional): hotel, rental car, flight… (comma-separated keywords)"
+                  placeholder="Except at (optional): Walmart, Target…"
                   className="field-line mt-1 w-full text-xs"
                 />
               </li>
