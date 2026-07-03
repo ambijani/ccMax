@@ -32,6 +32,8 @@ function emptyCategory(): CardIngestionCategory {
     source_text: "",
     source_url: null,
     excluded_merchants: null,
+    included_merchants: null,
+    purchase_types: null,
   };
 }
 
@@ -339,6 +341,30 @@ export default function AddCardFlow({ onSaved }: { onSaved: () => void }) {
                     })
                   }
                   placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
+                  className="field-line mt-1 w-full text-xs"
+                />
+                <input
+                  value={c.included_merchants?.join(", ") ?? ""}
+                  onChange={(e) =>
+                    updateCategory(i, {
+                      included_merchants: e.target.value
+                        ? e.target.value.split(",").map((m) => m.trim().toLowerCase()).filter(Boolean)
+                        : null,
+                    })
+                  }
+                  placeholder="Also counts as this category (optional): uber, lyft, parking, transit…"
+                  className="field-line mt-1 w-full text-xs"
+                />
+                <input
+                  value={c.purchase_types?.join(", ") ?? ""}
+                  onChange={(e) =>
+                    updateCategory(i, {
+                      purchase_types: e.target.value
+                        ? e.target.value.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
+                        : null,
+                    })
+                  }
+                  placeholder="Applies only to (optional): hotel, rental car, flight… (comma-separated keywords)"
                   className="field-line mt-1 w-full text-xs"
                 />
               </li>

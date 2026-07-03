@@ -78,6 +78,8 @@ export async function POST(request: Request) {
         source_text: c.source_text,
         source_url: c.source_url,
         excluded_merchants: c.excluded_merchants?.length ? c.excluded_merchants : null,
+        included_merchants: c.included_merchants?.length ? c.included_merchants : null,
+        purchase_types: c.purchase_types?.length ? c.purchase_types : null,
       })),
     );
     if (catError) return NextResponse.json({ error: catError.message }, { status: 500 });

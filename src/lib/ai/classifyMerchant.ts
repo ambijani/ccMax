@@ -18,8 +18,9 @@ Apply these rules:
 - Amazon.com purchases -> "Online Shopping", not "General" (treat marketplace/e-commerce platforms as their own category) — UNLESS it's specifically groceries/Amazon Fresh/Whole Foods delivery, which is "Online Grocery".
 - Buying groceries through an online grocery delivery/pickup service (e.g. Instacart, Amazon Fresh, Whole Foods delivery, a supermarket's own delivery/pickup site or app) -> "Online Grocery", not "Online Shopping" or "Grocery".
 - Buying groceries in person at a physical supermarket -> "Grocery".
+- Rideshare and local transportation services (Uber rides, Lyft, taxis, bike/scooter share) -> "General", NOT "Travel - Direct" or "Travel - Portal". These are everyday local transport, not travel bookings. Exception: Uber Eats and food delivery orders from Uber -> "Dining/Restaurants".
 - Booking travel through a card issuer's own portal (e.g. "Chase Travel", "Amex Travel", "Capital One Travel", "Citi Travel") -> "Travel - Portal".
-- Booking directly with an airline, hotel, or other travel provider's own site/app (e.g. "United Airlines", "Marriott.com", "Delta", "Expedia" when not noted as a card portal) -> "Travel - Direct". This also covers vague trip mentions like "plane ticket" or "hotel" when no portal is named.
+- Booking directly with an airline, hotel, car rental, or other travel provider's own site/app (e.g. "United Airlines", "Marriott.com", "Delta", "Expedia" when not noted as a card portal) -> "Travel - Direct". This also covers vague trip mentions like "plane ticket" or "hotel" when no portal is named. Do NOT use this for rideshare or local taxi services.
 - If the wording doesn't make clear whether a portal or the provider's own site was used, set ambiguous=true and list both "Travel - Portal" and "Travel - Direct" in alternative_categories.
 - If you are genuinely unsure between two categories, set ambiguous=true and list both in alternative_categories so the user can pick.
 

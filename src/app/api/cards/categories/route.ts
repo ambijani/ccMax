@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { cardId, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants } = body;
+  const { cardId, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants, includedMerchants, purchaseTypes } = body;
   if (!cardId || !category || typeof earnRate !== "number") {
     return NextResponse.json(
       { error: "cardId, category, and earnRate are required" },
@@ -27,6 +27,8 @@ export async function POST(request: Request) {
       source_text: sourceText ?? null,
       source_url: sourceUrl ?? null,
       excluded_merchants: excludedMerchants?.length ? excludedMerchants : null,
+      included_merchants: includedMerchants?.length ? includedMerchants : null,
+      purchase_types: purchaseTypes?.length ? purchaseTypes : null,
     })
     .select()
     .single();
@@ -41,7 +43,7 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants } = body;
+  const { id, category, earnRate, capAmountCents, capPeriod, isRotating, sourceText, sourceUrl, excludedMerchants, includedMerchants, purchaseTypes } = body;
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const update: Record<string, unknown> = { needs_review: false };
@@ -53,6 +55,8 @@ export async function PATCH(request: Request) {
   if (sourceText !== undefined) update.source_text = sourceText;
   if (sourceUrl !== undefined) update.source_url = sourceUrl;
   if (excludedMerchants !== undefined) update.excluded_merchants = excludedMerchants?.length ? excludedMerchants : null;
+  if (includedMerchants !== undefined) update.included_merchants = includedMerchants?.length ? includedMerchants : null;
+  if (purchaseTypes !== undefined) update.purchase_types = purchaseTypes?.length ? purchaseTypes : null;
 
   const { data, error } = await supabase
     .from("card_categories")

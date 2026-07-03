@@ -336,6 +336,8 @@ function CategoryRow({
   const [sourceText, setSourceText] = useState(cat.source_text ?? "");
   const [sourceUrl, setSourceUrl] = useState(cat.source_url ?? "");
   const [excludedMerchants, setExcludedMerchants] = useState(cat.excluded_merchants?.join(", ") ?? "");
+  const [includedMerchants, setIncludedMerchants] = useState(cat.included_merchants?.join(", ") ?? "");
+  const [purchaseTypes, setPurchaseTypes] = useState(cat.purchase_types?.join(", ") ?? "");
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
 
@@ -359,6 +361,12 @@ function CategoryRow({
           sourceUrl: sourceUrl || null,
           excludedMerchants: excludedMerchants
             ? excludedMerchants.split(",").map((m) => m.trim()).filter(Boolean)
+            : null,
+          includedMerchants: includedMerchants
+            ? includedMerchants.split(",").map((m) => m.trim().toLowerCase()).filter(Boolean)
+            : null,
+          purchaseTypes: purchaseTypes
+            ? purchaseTypes.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
             : null,
         }),
       });
@@ -444,6 +452,16 @@ function CategoryRow({
               {pct >= 100 && " — cap hit"}
             </p>
           </div>
+        )}
+        {cat.purchase_types && cat.purchase_types.length > 0 && (
+          <p className="mt-2 font-mono text-xs text-ink-500">
+            Applies to: {cat.purchase_types.join(", ")}
+          </p>
+        )}
+        {cat.included_merchants && cat.included_merchants.length > 0 && (
+          <p className="mt-2 font-mono text-xs text-ink-500">
+            Also counts: {cat.included_merchants.join(", ")}
+          </p>
         )}
         {cat.excluded_merchants && cat.excluded_merchants.length > 0 && (
           <p className="mt-2 font-mono text-xs text-ink-500">
@@ -538,6 +556,18 @@ function CategoryRow({
         value={excludedMerchants}
         onChange={(e) => setExcludedMerchants(e.target.value)}
         placeholder="Excluded merchants, comma-separated (e.g. Walmart, Target)"
+        className="field-line mt-1 w-full text-xs"
+      />
+      <input
+        value={includedMerchants}
+        onChange={(e) => setIncludedMerchants(e.target.value)}
+        placeholder="Also counts as this category (optional): uber, lyft, parking, transit…"
+        className="field-line mt-1 w-full text-xs"
+      />
+      <input
+        value={purchaseTypes}
+        onChange={(e) => setPurchaseTypes(e.target.value)}
+        placeholder="Applies only to (optional): hotel, rental car, flight… (comma-separated keywords)"
         className="field-line mt-1 w-full text-xs"
       />
       <div className="mt-2 flex gap-2">

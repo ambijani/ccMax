@@ -28,6 +28,8 @@ export interface CardCategory {
   source_text: string | null;
   source_url: string | null;
   excluded_merchants: string[] | null;
+  included_merchants: string[] | null;
+  purchase_types: string[] | null;
   created_at: string;
 }
 
