@@ -190,6 +190,16 @@ function PromoSection({ cardId }: { cardId: string }) {
   const [loading, setLoading] = useState(true);
   const [researching, setResearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    merchant_keywords: "",
+    expires_at: "",
+    source_text: "",
+    source_url: "",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -241,21 +251,114 @@ function PromoSection({ cardId }: { cardId: string }) {
     load();
   }
 
+  async function saveManual() {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const keywords = form.merchant_keywords
+        .split(",")
+        .map((k) => k.trim().toLowerCase())
+        .filter(Boolean);
+      const res = await fetch("/api/cards/promos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cardId,
+          title: form.title.trim(),
+          description: form.description.trim(),
+          merchantKeywords: keywords.length ? keywords : null,
+          expiresAt: form.expires_at || null,
+          sourceText: form.source_text.trim() || null,
+          sourceUrl: form.source_url.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      setAdding(false);
+      setForm({ title: "", description: "", merchant_keywords: "", expires_at: "", source_text: "", source_url: "" });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-mono text-xs tracking-wide text-ink-500 uppercase">
           Active promos &amp; offers
         </p>
-        <button
-          onClick={research}
-          disabled={researching}
-          className="font-mono text-xs text-foil hover:underline disabled:opacity-50"
-        >
-          {researching ? "Searching Reddit/DoC..." : "Check for active promos"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setAdding((v) => !v)}
+            className="font-mono text-xs text-ink-500 hover:text-foil"
+          >
+            {adding ? "Cancel" : "+ Add manually"}
+          </button>
+          <button
+            onClick={research}
+            disabled={researching}
+            className="font-mono text-xs text-foil hover:underline disabled:opacity-50"
+          >
+            {researching ? "Searching Reddit/DoC..." : "Check for active promos"}
+          </button>
+        </div>
       </div>
       {error && <p className="mt-1 font-mono text-xs text-alert">{error}</p>}
+      {adding && (
+        <div className="mt-3 border border-ledger-700 bg-ledger-950 p-3 text-xs">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <input
+              placeholder="Title (required)"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              className="field-line col-span-2 text-xs"
+            />
+            <input
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              className="field-line col-span-2 text-xs"
+            />
+            <input
+              placeholder="Merchant keywords (lyft, uber…)"
+              value={form.merchant_keywords}
+              onChange={(e) => setForm((f) => ({ ...f, merchant_keywords: e.target.value }))}
+              className="field-line text-xs"
+            />
+            <input
+              type="date"
+              placeholder="Expires"
+              value={form.expires_at}
+              onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
+              className="field-line text-xs"
+            />
+            <textarea
+              placeholder="Source text (paste benefit text)"
+              value={form.source_text}
+              onChange={(e) => setForm((f) => ({ ...f, source_text: e.target.value }))}
+              rows={2}
+              className="field-line col-span-2 text-xs"
+            />
+            <input
+              placeholder="Source URL"
+              value={form.source_url}
+              onChange={(e) => setForm((f) => ({ ...f, source_url: e.target.value }))}
+              className="field-line col-span-2 text-xs"
+            />
+          </div>
+          <button
+            onClick={saveManual}
+            disabled={saving || !form.title.trim()}
+            className="mt-2 bg-foil px-3 py-1.5 text-xs font-medium text-ledger-950 hover:bg-foil-dim disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save promo"}
+          </button>
+        </div>
+      )}
       {!loading && promos.length === 0 && !researching && (
         <p className="mt-1 text-xs text-ink-500">
           None found yet — click &quot;Check for active promos&quot; to search.

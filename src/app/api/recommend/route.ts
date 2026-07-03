@@ -68,15 +68,6 @@ export async function POST(request: Request) {
     (overrides ?? []).map((o) => [o.reward_program, o.cpp_override]),
   );
 
-  const ranked = rankCardsForPurchase(
-    cards ?? [],
-    classification.category,
-    amountCents,
-    valuationsByProgram,
-    overridesByProgram,
-    merchantName,
-  );
-
   const cardIds = (cards ?? []).map((c) => c.id);
   const { data: promos } = await supabase
     .from("card_promos")
@@ -84,14 +75,27 @@ export async function POST(request: Request) {
     .in("card_id", cardIds.length ? cardIds : ["__none__"])
     .returns<CardPromo[]>();
 
-  const matchedPromos = (promos ?? [])
-    .filter((p) => matchesPromo(merchantName, p))
-    .map((p) => ({ ...p, card: (cards ?? []).find((c) => c.id === p.card_id) }));
+  const matchedPromos = (promos ?? []).filter((p) => matchesPromo(merchantName, p));
+
+  const promosByCardId: Record<string, CardPromo[]> = {};
+  for (const p of matchedPromos) {
+    (promosByCardId[p.card_id] ??= []).push(p);
+  }
+
+  const ranked = rankCardsForPurchase(
+    cards ?? [],
+    classification.category,
+    amountCents,
+    valuationsByProgram,
+    overridesByProgram,
+    merchantName,
+    promosByCardId,
+  );
 
   return NextResponse.json({
     classification,
     ranked,
     valuations: valuationsByProgram,
-    matched_promos: matchedPromos,
+    matched_promos: matchedPromos.map((p) => ({ ...p, card: (cards ?? []).find((c) => c.id === p.card_id) })),
   });
 }

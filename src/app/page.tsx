@@ -283,7 +283,10 @@ export default function Home() {
                 </p>
                 <p className="font-mono text-xs text-ink-500">
                   {overrideCategory ?? result?.classification.category} ·{" "}
-                  {formatEarnRate(top.card.reward_type, top.earn_rate)}
+                  {formatEarnRate(top.card.reward_type, top.effective_earn_rate)}
+                  {top.matched_promo && top.effective_earn_rate > top.earn_rate && (
+                    <span className="ml-1 text-signal"> via promo</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -456,13 +459,13 @@ export default function Home() {
               <div className="border-l-2 border-foil/40 py-3 pl-3 font-mono text-xs text-ink-500">
                 {top.card.reward_type === "cash_back" ? (
                   <p>
-                    ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}% cash back ={" "}
+                    ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.effective_earn_rate}% cash back ={" "}
                     <span className="text-ink-100">{formatCents(top.dollar_value_cents)}</span>
                   </p>
                 ) : (
                   <div className="space-y-1">
                     <p>
-                      ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.earn_rate}×{" "}
+                      ${(parseFloat(amount) || 0).toFixed(2)} spent × {top.effective_earn_rate}×{" "}
                       {rewardUnit(top.card.reward_type)} ={" "}
                       <span className="text-ink-100">
                         {Math.round(top.points_earned).toLocaleString()} {rewardUnit(top.card.reward_type)}
@@ -591,7 +594,8 @@ export default function Home() {
                     {runnerUps.map((r) => (
                       <li key={r.card.id} className="flex items-center justify-between py-2 text-sm">
                         <span className={r.excluded ? "text-ink-500" : "text-ink-300"}>
-                          {r.card.name} — {formatEarnRate(r.card.reward_type, r.earn_rate)}
+                          {r.card.name} — {formatEarnRate(r.card.reward_type, r.effective_earn_rate)}
+                          {r.matched_promo && r.effective_earn_rate > r.earn_rate ? " (via promo)" : ""}
                           {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
                         </span>
                         <span className="font-mono text-xs text-ink-500">

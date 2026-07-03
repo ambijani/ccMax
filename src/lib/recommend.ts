@@ -1,4 +1,4 @@
-import type { CardCategory, CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
+import type { CardCategory, CardPromo, CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
 
 function findCategoryMatch(card: CardWithCategories, category: string, merchantName: string = "") {
   const categoryLower = category.toLowerCase();
@@ -58,6 +58,7 @@ export function rankCardsForPurchase(
   valuationsByProgram: Record<string, PointsValuation>,
   cppOverridesByProgram: Record<string, number> = {},
   merchantName: string = "",
+  promosByCardId: Record<string, CardPromo[]> = {},
 ): RankedCardResult[] {
   const amountDollars = amountCents / 100;
 
@@ -75,6 +76,15 @@ export function rankCardsForPurchase(
     const merchantExcluded = candidateMatch !== null && isMerchantExcluded(candidateMatch, merchantName);
     const matched = merchantExcluded ? null : candidateMatch;
     const earnRate = matched?.earn_rate ?? card.base_earn_rate;
+
+    // Find the highest-value promo for this card/merchant combo that specifies an earn rate.
+    const cardPromos = promosByCardId[card.id] ?? [];
+    const bestPromo = cardPromos.reduce<CardPromo | null>((best, p) => {
+      if (!p.value_percent) return best;
+      if (!best || !best.value_percent || p.value_percent > best.value_percent) return p;
+      return best;
+    }, null);
+    const effectiveEarnRate = bestPromo?.value_percent ? Math.max(earnRate, bestPromo.value_percent) : earnRate;
 
     let capStatus: RankedCardResult["cap_status"] = "none";
     let capPercentUsed: number | null = null;
@@ -104,9 +114,9 @@ export function rankCardsForPurchase(
 
     if (card.reward_type === "cash_back") {
       pointsEarned = 0;
-      dollarValueCents = Math.round(amountDollars * earnRate);
+      dollarValueCents = Math.round(amountDollars * effectiveEarnRate);
     } else {
-      pointsEarned = amountDollars * earnRate;
+      pointsEarned = amountDollars * effectiveEarnRate;
       const valuation = valuationsByProgram[card.reward_program];
       const override = cppOverridesByProgram[card.reward_program];
       const community = valuation?.cpp_community;
@@ -140,6 +150,8 @@ export function rankCardsForPurchase(
       matched_category: matched,
       merchant_excluded_category: merchantExcluded ? candidateMatch : null,
       earn_rate: earnRate,
+      effective_earn_rate: effectiveEarnRate,
+      matched_promo: bestPromo,
       points_earned: pointsEarned,
       dollar_value_cents: dollarValueCents,
       cpp_used: cppUsed,

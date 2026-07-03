@@ -112,6 +112,8 @@ export interface RankedCardResult {
   matched_category: CardCategory | null;
   merchant_excluded_category: CardCategory | null;
   earn_rate: number;
+  effective_earn_rate: number;
+  matched_promo: CardPromo | null;
   points_earned: number;
   dollar_value_cents: number;
   cpp_used: number | null;
