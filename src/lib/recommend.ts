@@ -51,6 +51,65 @@ function findIncludedMerchantMatch(card: CardWithCategories, merchantName: strin
   );
 }
 
+interface EarnValue {
+  points_earned: number;
+  dollar_value_cents: number;
+  cpp_used: number | null;
+  cpp_source: RankedCardResult["cpp_source"];
+  conservative_dollar_value_cents: number | null;
+  community_dollar_value_cents: number | null;
+  portal_dollar_value_cents: number | null;
+}
+
+function computeEarnValue(
+  card: CardWithCategories,
+  effectiveEarnRate: number,
+  amountDollars: number,
+  valuationsByProgram: Record<string, PointsValuation>,
+  cppOverridesByProgram: Record<string, number>,
+  isPortalBooking: boolean,
+): EarnValue {
+  if (card.reward_type === "cash_back") {
+    return {
+      points_earned: 0,
+      dollar_value_cents: Math.round(amountDollars * effectiveEarnRate),
+      cpp_used: null,
+      cpp_source: null,
+      conservative_dollar_value_cents: null,
+      community_dollar_value_cents: null,
+      portal_dollar_value_cents: null,
+    };
+  }
+
+  const pointsEarned = amountDollars * effectiveEarnRate;
+  const valuation = valuationsByProgram[card.reward_program];
+  const override = cppOverridesByProgram[card.reward_program];
+  const community = valuation?.cpp_community;
+  const conservative = valuation?.cpp_conservative;
+  const portal = valuation?.cpp_portal;
+
+  const cppUsed = override ?? (isPortalBooking ? portal ?? conservative ?? 1 : conservative ?? 1);
+  const cppSource: RankedCardResult["cpp_source"] =
+    override !== undefined
+      ? "override"
+      : isPortalBooking && portal !== undefined && portal !== null
+        ? "portal"
+        : conservative !== undefined
+          ? "conservative"
+          : "default";
+
+  return {
+    points_earned: pointsEarned,
+    dollar_value_cents: Math.round(pointsEarned * (cppUsed / 100) * 100),
+    cpp_used: cppUsed,
+    cpp_source: cppSource,
+    conservative_dollar_value_cents: Math.round(pointsEarned * ((conservative ?? 1) / 100) * 100),
+    community_dollar_value_cents: Math.round(pointsEarned * ((community ?? 1) / 100) * 100),
+    portal_dollar_value_cents:
+      portal !== undefined && portal !== null ? Math.round(pointsEarned * (portal / 100) * 100) : null,
+  };
+}
+
 export function rankCardsForPurchase(
   cards: CardWithCategories[],
   category: string,
@@ -104,46 +163,11 @@ export function rankCardsForPurchase(
       }
     }
 
-    let dollarValueCents: number;
-    let pointsEarned: number;
-    let cppUsed: number | null = null;
-    let cppSource: RankedCardResult["cpp_source"] = null;
-    let conservativeDollarValueCents: number | null = null;
-    let communityDollarValueCents: number | null = null;
-    let portalDollarValueCents: number | null = null;
-
-    if (card.reward_type === "cash_back") {
-      pointsEarned = 0;
-      dollarValueCents = Math.round(amountDollars * effectiveEarnRate);
-    } else {
-      pointsEarned = amountDollars * effectiveEarnRate;
-      const valuation = valuationsByProgram[card.reward_program];
-      const override = cppOverridesByProgram[card.reward_program];
-      const community = valuation?.cpp_community;
-      const conservative = valuation?.cpp_conservative;
-      const portal = valuation?.cpp_portal;
-      // Points earned through the issuer's own travel portal usually redeem
-      // at a fixed cash-equivalent rate, distinct from transfer-partner
-      // valuations — use it as the default whenever this is a portal booking.
-      const isPortalBooking = matched?.category.toLowerCase() === "travel - portal";
-
-      cppUsed = override ?? (isPortalBooking ? portal ?? conservative ?? 1 : conservative ?? 1);
-      cppSource =
-        override !== undefined
-          ? "override"
-          : isPortalBooking && portal !== undefined && portal !== null
-            ? "portal"
-            : conservative !== undefined
-              ? "conservative"
-              : "default";
-      dollarValueCents = Math.round(pointsEarned * (cppUsed / 100) * 100);
-      conservativeDollarValueCents = Math.round(pointsEarned * ((conservative ?? 1) / 100) * 100);
-      communityDollarValueCents = Math.round(pointsEarned * ((community ?? 1) / 100) * 100);
-      portalDollarValueCents =
-        portal !== undefined && portal !== null
-          ? Math.round(pointsEarned * (portal / 100) * 100)
-          : null;
-    }
+    // Points earned through the issuer's own travel portal usually redeem
+    // at a fixed cash-equivalent rate, distinct from transfer-partner
+    // valuations — use it as the default whenever this is a portal booking.
+    const isPortalBooking = matched?.category.toLowerCase() === "travel - portal";
+    const value = computeEarnValue(card, effectiveEarnRate, amountDollars, valuationsByProgram, cppOverridesByProgram, isPortalBooking);
 
     return {
       card,
@@ -152,13 +176,7 @@ export function rankCardsForPurchase(
       earn_rate: earnRate,
       effective_earn_rate: effectiveEarnRate,
       matched_promo: bestPromo,
-      points_earned: pointsEarned,
-      dollar_value_cents: dollarValueCents,
-      cpp_used: cppUsed,
-      cpp_source: cppSource,
-      conservative_dollar_value_cents: conservativeDollarValueCents,
-      community_dollar_value_cents: communityDollarValueCents,
-      portal_dollar_value_cents: portalDollarValueCents,
+      ...value,
       cap_status: capStatus,
       cap_percent_used: capPercentUsed,
       excluded,
@@ -166,7 +184,11 @@ export function rankCardsForPurchase(
     };
   });
 
-  return results.sort((a, b) => {
+  return sortRankedResults(results);
+}
+
+export function sortRankedResults(results: RankedCardResult[]): RankedCardResult[] {
+  return [...results].sort((a, b) => {
     if (a.excluded !== b.excluded) return a.excluded ? 1 : -1;
     if (a.dollar_value_cents !== b.dollar_value_cents) return b.dollar_value_cents - a.dollar_value_cents;
     // Tie-breaker: prefer a card with an actual matched bonus category over

@@ -20,7 +20,7 @@ interface RecommendResponse {
   ranked: RankedCardResult[];
   valuations: Record<string, PointsValuation>;
   matched_promos: MatchedPromo[];
-  research_notes: Record<string, string>;
+  research_notes: Record<string, { note: string; qualifies: boolean }>;
 }
 
 function formatPromoValue(promo: CardPromo) {
@@ -374,9 +374,23 @@ export default function Home() {
                   calculation below to compare against an optimized-redemption estimate.
                 </p>
               )}
+              {top.excluded && top.exclusion_reason && (
+                <p className="text-alert">{top.exclusion_reason}</p>
+              )}
               {result.research_notes[top.card.id] && (
-                <p className="border-l-2 border-foil/60 pl-3 text-xs text-ink-300">
-                  {result.research_notes[top.card.id]}
+                <p
+                  className={
+                    result.research_notes[top.card.id].qualifies
+                      ? "border-l-2 border-foil/60 pl-3 text-xs text-ink-300"
+                      : "border-l-2 border-alert/60 pl-3 text-xs text-ink-300"
+                  }
+                >
+                  {!result.research_notes[top.card.id].qualifies && (
+                    <span className="mr-1 font-mono text-[10px] tracking-wide text-alert uppercase">
+                      AI research flag, unconfirmed —
+                    </span>
+                  )}
+                  {result.research_notes[top.card.id].note}
                 </p>
               )}
               {top.matched_category?.source_text && (
@@ -598,17 +612,29 @@ export default function Home() {
                 {showRunnerUps && (
                   <ul className="mt-2 divide-y divide-ledger-800">
                     {runnerUps.map((r) => (
-                      <li key={r.card.id} className="flex items-center justify-between py-2 text-sm">
-                        <span className={r.excluded ? "text-ink-500" : "text-ink-300"}>
-                          {r.card.name} — {formatEarnRate(r.card.reward_type, r.effective_earn_rate)}
-                          {r.matched_promo && r.effective_earn_rate > r.earn_rate ? " (via promo)" : ""}
-                          {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
-                        </span>
-                        <span className="font-mono text-xs text-ink-500">
-                          {r.card.reward_type === "cash_back"
-                            ? formatCents(r.dollar_value_cents)
-                            : `${Math.round(r.points_earned).toLocaleString()} ${rewardUnit(r.card.reward_type)} (≈ ${formatCents(r.dollar_value_cents)})`}
-                        </span>
+                      <li key={r.card.id} className="py-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className={r.excluded ? "text-ink-500" : "text-ink-300"}>
+                            {r.card.name} — {formatEarnRate(r.card.reward_type, r.effective_earn_rate)}
+                            {r.matched_promo && r.effective_earn_rate > r.earn_rate ? " (via promo)" : ""}
+                            {r.excluded && r.exclusion_reason ? ` (${r.exclusion_reason})` : ""}
+                          </span>
+                          <span className="font-mono text-xs text-ink-500">
+                            {r.card.reward_type === "cash_back"
+                              ? formatCents(r.dollar_value_cents)
+                              : `${Math.round(r.points_earned).toLocaleString()} ${rewardUnit(r.card.reward_type)} (≈ ${formatCents(r.dollar_value_cents)})`}
+                          </span>
+                        </div>
+                        {result.research_notes[r.card.id] && (
+                          <p className="mt-1 text-xs text-ink-500">
+                            {!result.research_notes[r.card.id].qualifies && (
+                              <span className="mr-1 font-mono text-[10px] tracking-wide text-alert uppercase">
+                                AI research flag, unconfirmed —
+                              </span>
+                            )}
+                            {result.research_notes[r.card.id].note}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>

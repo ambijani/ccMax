@@ -107,13 +107,18 @@ export async function POST(request: Request) {
         r.card.name,
         r.card.reward_type,
         r.matched_category!.source_text!,
-      ).then((note) => ({ cardId: r.card.id, note })),
+      ).then((verification) => ({ cardId: r.card.id, verification })),
     ),
   );
 
-  const research_notes: Record<string, string> = {};
+  // Research is a caveat flag, not a rate override — it doesn't change the computed
+  // rate/value or re-rank cards. It just tells the user when the AI's read of the terms
+  // disagrees with the structural category match, so they can verify before relying on it.
+  const research_notes: Record<string, { note: string; qualifies: boolean }> = {};
   for (const result of researchResults) {
-    if (result.status === "fulfilled") research_notes[result.value.cardId] = result.value.note;
+    if (result.status !== "fulfilled") continue;
+    const { cardId, verification } = result.value;
+    research_notes[cardId] = verification;
   }
 
   return NextResponse.json({
