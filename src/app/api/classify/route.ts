@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await classifyMerchant(merchantName);
+    const result = await classifyMerchant(supabase, merchantName);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

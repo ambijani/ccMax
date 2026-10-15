@@ -1,6 +1,6 @@
 import type { CardCategory, CardPromo, CardWithCategories, PointsValuation, RankedCardResult } from "@/lib/types";
 
-function findCategoryMatch(card: CardWithCategories, category: string, merchantName: string = "") {
+export function findCategoryMatch(card: CardWithCategories, category: string, merchantName: string = "") {
   const categoryLower = category.toLowerCase();
   let rows = card.card_categories.filter((c) => c.category.toLowerCase() === categoryLower);
 

@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   try {
     classification = forcedCategory
       ? { category: forcedCategory, confidence: "high" as const, ambiguous: false, alternative_categories: [], reasoning: "User-selected category." }
-      : await classifyMerchant(merchantName);
+      : await classifyMerchant(supabase, merchantName);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Classification failed" },
@@ -93,14 +93,17 @@ export async function POST(request: Request) {
     promosByCardId,
   );
 
-  // Run research for top cards that have source_text on their matched category.
+  // Eagerly research only the top card — it's the one always shown to the
+  // user. Runner-up cards are verified lazily via /api/verify-runner-ups,
+  // only if the user expands that list.
   const researchCandidates = ranked
     .filter((r) => !r.excluded && r.matched_category?.source_text)
-    .slice(0, 3);
+    .slice(0, 1);
 
   const researchResults = await Promise.allSettled(
     researchCandidates.map((r) =>
       verifyEarnRate(
+        supabase,
         merchantName,
         r.matched_category!.category,
         r.effective_earn_rate,

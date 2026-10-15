@@ -1,4 +1,5 @@
-import { anthropic, MODEL } from "./anthropic";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { anthropic, FAST_MODEL } from "./anthropic";
 import { REWARD_CATEGORIES } from "@/lib/types";
 
 export interface MerchantClassification {
@@ -9,7 +10,59 @@ export interface MerchantClassification {
   reasoning: string;
 }
 
-export async function classifyMerchant(merchantName: string): Promise<MerchantClassification> {
+export function normalizeMerchantKey(merchantName: string): string {
+  return merchantName.trim().toLowerCase();
+}
+
+async function getCachedClassification(
+  supabase: SupabaseClient,
+  merchantKey: string,
+): Promise<MerchantClassification | null> {
+  const { data, error } = await supabase.rpc("get_merchant_classification_cache", {
+    p_merchant_key: merchantKey,
+  });
+  if (error || !data || data.length === 0) return null;
+  const row = data[0];
+  return {
+    category: row.category,
+    confidence: row.confidence,
+    ambiguous: row.ambiguous,
+    alternative_categories: row.alternative_categories ?? [],
+    reasoning: row.reasoning,
+  };
+}
+
+async function setCachedClassification(
+  supabase: SupabaseClient,
+  merchantKey: string,
+  classification: MerchantClassification,
+): Promise<void> {
+  // Best-effort — a cache write failure shouldn't fail the classification.
+  await supabase.rpc("set_merchant_classification_cache", {
+    p_merchant_key: merchantKey,
+    p_category: classification.category,
+    p_confidence: classification.confidence,
+    p_ambiguous: classification.ambiguous,
+    p_alternative_categories: classification.alternative_categories,
+    p_reasoning: classification.reasoning,
+  });
+}
+
+export async function classifyMerchant(
+  supabase: SupabaseClient,
+  merchantName: string,
+): Promise<MerchantClassification> {
+  const merchantKey = normalizeMerchantKey(merchantName);
+
+  const cached = await getCachedClassification(supabase, merchantKey);
+  if (cached) return cached;
+
+  const classification = await classifyMerchantViaAI(merchantName);
+  await setCachedClassification(supabase, merchantKey, classification);
+  return classification;
+}
+
+async function classifyMerchantViaAI(merchantName: string): Promise<MerchantClassification> {
   const prompt = `Classify the purchase "${merchantName}" (this may be a merchant name like "Costco" or a description of what's being bought, like "plane ticket" or "groceries") into exactly one credit card reward category from this list: ${REWARD_CATEGORIES.join(", ")}.
 
 Apply these rules:
@@ -34,7 +87,7 @@ Respond with ONLY a fenced \`\`\`json code block containing:
 }`;
 
   const response = await anthropic.messages.create({
-    model: MODEL,
+    model: FAST_MODEL,
     max_tokens: 1024,
     messages: [{ role: "user", content: prompt }],
   });

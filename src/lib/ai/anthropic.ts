@@ -4,6 +4,10 @@ export const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! 
 
 export const MODEL = "claude-sonnet-4-6";
 
+// Small, constrained-output classification/verification tasks (merchant
+// category pick, YES/NO earn-rate check) don't need Sonnet-tier reasoning.
+export const FAST_MODEL = "claude-haiku-5-5";
+
 const WEB_SEARCH_TOOL = {
   type: "web_search_20250305" as const,
   name: "web_search" as const,

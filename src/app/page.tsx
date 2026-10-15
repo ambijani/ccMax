@@ -47,6 +47,8 @@ export default function Home() {
   const [cards, setCards] = useState<CardWithCategories[] | null>(null);
   const [showCalc, setShowCalc] = useState(false);
   const [applyingValuation, setApplyingValuation] = useState(false);
+  const [verifyingRunnerUps, setVerifyingRunnerUps] = useState(false);
+  const [runnerUpsVerified, setRunnerUpsVerified] = useState(false);
 
   useEffect(() => {
     fetch("/api/cards")
@@ -75,10 +77,47 @@ export default function Home() {
       setShowRunnerUps(false);
       setShowCalc(false);
       setLogged(false);
+      setRunnerUpsVerified(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleRunnerUps() {
+    const next = !showRunnerUps;
+    setShowRunnerUps(next);
+    if (!next || runnerUpsVerified || !result) return;
+
+    const candidates = result.ranked
+      .slice(1)
+      .filter((r) => !r.excluded && r.matched_category?.source_text)
+      .slice(0, 2)
+      .map((r) => ({ cardId: r.card.id, effectiveEarnRate: r.effective_earn_rate }));
+
+    setRunnerUpsVerified(true);
+    if (candidates.length === 0) return;
+
+    setVerifyingRunnerUps(true);
+    try {
+      const res = await fetch("/api/verify-runner-ups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          merchantName: merchantName(),
+          category: overrideCategory ?? result.classification.category,
+          candidates,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult((prev) =>
+          prev ? { ...prev, research_notes: { ...prev.research_notes, ...data.research_notes } } : prev,
+        );
+      }
+    } finally {
+      setVerifyingRunnerUps(false);
     }
   }
 
@@ -604,10 +643,11 @@ export default function Home() {
             {runnerUps.length > 0 && (
               <div className="py-3">
                 <button
-                  onClick={() => setShowRunnerUps((v) => !v)}
+                  onClick={toggleRunnerUps}
                   className="font-mono text-xs text-ink-500 hover:text-ink-100"
                 >
                   {showRunnerUps ? "Hide" : "Show"} runner-up cards ({runnerUps.length})
+                  {verifyingRunnerUps ? " — checking…" : ""}
                 </button>
                 {showRunnerUps && (
                   <ul className="mt-2 divide-y divide-ledger-800">
