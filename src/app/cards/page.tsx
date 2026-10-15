@@ -179,12 +179,6 @@ function CardBanner({ card, onSaved }: { card: CardWithCategories; onSaved: () =
   );
 }
 
-function formatPromoValue(promo: CardPromo) {
-  if (promo.value_cents) return `$${(promo.value_cents / 100).toFixed(0)} off`;
-  if (promo.value_percent) return `${promo.value_percent}% off`;
-  return null;
-}
-
 function emptyPromoForm() {
   return { title: "", description: "", merchant_keywords: "", expires_at: "", source_text: "", source_url: "", value_percent: "", value_cents: "" };
 }
@@ -518,7 +512,7 @@ function CategoryRow({
   const [sourceUrl, setSourceUrl] = useState(cat.source_url ?? "");
   const [excludedMerchants, setExcludedMerchants] = useState(cat.excluded_merchants?.join(", ") ?? "");
   const [includedMerchants, setIncludedMerchants] = useState(cat.included_merchants?.join(", ") ?? "");
-  const [purchaseTypes, setPurchaseTypes] = useState(cat.purchase_types?.join(", ") ?? "");
+  const [purchaseTypes] = useState(cat.purchase_types?.join(", ") ?? "");
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
 

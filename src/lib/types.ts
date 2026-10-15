@@ -75,16 +75,6 @@ export interface UserCppOverride {
   created_at: string;
 }
 
-export interface Purchase {
-  id: string;
-  user_id: string;
-  merchant_name: string;
-  category: string;
-  amount_cents: number;
-  card_used_id: string | null;
-  created_at: string;
-}
-
 export const REWARD_CATEGORIES = [
   "Dining/Restaurants",
   "Travel - Portal",
@@ -101,7 +91,6 @@ export const REWARD_CATEGORIES = [
   "General",
 ] as const;
 
-export type RewardCategory = (typeof REWARD_CATEGORIES)[number];
 
 export interface CardWithCategories extends Card {
   card_categories: CardCategory[];
